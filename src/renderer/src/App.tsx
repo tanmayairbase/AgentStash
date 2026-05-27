@@ -24,7 +24,9 @@ import {
   normalizeModelLabel
 } from '@shared/format'
 import { sessionCostCategory, type SessionCostCategory } from '@shared/pricing'
+import { aggregateSessionCostStats } from '@shared/session-stats'
 import { SessionDetailView } from './components/SessionDetailView'
+import { SessionStatsModal } from './components/SessionStatsModal'
 import {
   SessionListSidebar,
   type ArchivedFilterValue,
@@ -167,6 +169,7 @@ export const App = () => {
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
   const [config, setConfig] = useState<AppConfig | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [selectedRepos, setSelectedRepos] = useState<string[]>([])
   const [selectedModels, setSelectedModels] = useState<string[]>([])
@@ -537,6 +540,10 @@ export const App = () => {
     baseFilteredSessions,
     starredFilter
   ])
+  const sessionStats = useMemo(
+    () => aggregateSessionCostStats(filteredSessions),
+    [filteredSessions]
+  )
 
   useEffect(() => {
     const additionalSelectableIds =
@@ -1018,6 +1025,7 @@ export const App = () => {
             query={searchQuery}
             onQueryChange={setSearchQuery}
             onClearFilters={onClearFilters}
+            onOpenStats={() => setShowStats(true)}
             repoOptions={repositoryOptions}
             selectedRepos={selectedRepos}
             onToggleRepo={onToggleRepo}
@@ -1081,6 +1089,12 @@ export const App = () => {
         config={config}
         onClose={() => setShowSettings(false)}
         onSave={onSaveConfig}
+      />
+      <SessionStatsModal
+        isOpen={showStats}
+        stats={sessionStats}
+        dateFilter={dateFilter}
+        onClose={() => setShowStats(false)}
       />
     </div>
   )

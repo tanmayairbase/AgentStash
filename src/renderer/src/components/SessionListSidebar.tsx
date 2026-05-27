@@ -32,6 +32,7 @@ interface Props {
   query: string
   onQueryChange: (query: string) => void
   onClearFilters: () => void
+  onOpenStats: () => void
   repoOptions: string[]
   selectedRepos: string[]
   onToggleRepo: (repoPath: string) => void
@@ -382,6 +383,7 @@ export const SessionListSidebar = ({
   query,
   onQueryChange,
   onClearFilters,
+  onOpenStats,
   repoOptions,
   selectedRepos,
   onToggleRepo,
@@ -565,6 +567,14 @@ export const SessionListSidebar = ({
           >
             Clear
           </button>
+          <button
+            type="button"
+            className="filters-stats"
+            onClick={onOpenStats}
+            aria-label="Open session stats"
+          >
+            Stats
+          </button>
         </div>
 
         {filtersExpanded && (
@@ -635,6 +645,7 @@ export const SessionListSidebar = ({
                 <option value="today">Today</option>
                 <option value="yesterday">Yesterday</option>
                 <option value="last7">Last 7 days</option>
+                <option value="last14">Last 14 days</option>
                 <option value="last30">Last 30 days</option>
               </select>
             </label>

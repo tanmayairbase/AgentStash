@@ -61,6 +61,7 @@ const renderSidebar = (
   const onSelectStarredMessage = vi.fn()
   const onQueryChange = vi.fn()
   const onClearFilters = vi.fn()
+  const onOpenStats = vi.fn()
   const onToggleRepo = vi.fn()
   const onToggleModel = vi.fn()
   const onToggleEstimatedCost = vi.fn()
@@ -82,6 +83,7 @@ const renderSidebar = (
       query=""
       onQueryChange={onQueryChange}
       onClearFilters={onClearFilters}
+      onOpenStats={onOpenStats}
       repoOptions={['/repos/a', '/repos/b']}
       selectedRepos={[]}
       onToggleRepo={onToggleRepo}
@@ -113,6 +115,7 @@ const renderSidebar = (
     onSelectStarredMessage,
     onQueryChange,
     onClearFilters,
+    onOpenStats,
     onToggleRepo,
     onToggleModel,
     onToggleEstimatedCost,
@@ -137,7 +140,8 @@ describe('SessionListSidebar', () => {
       onToggleModel,
       onToggleEstimatedCost,
       onToggleOrigin,
-      onDateFilterChange
+      onDateFilterChange,
+      onOpenStats
     } = renderSidebar()
 
     fireEvent.click(screen.getByText('Implement auth parser'))
@@ -171,6 +175,9 @@ describe('SessionListSidebar', () => {
       target: { value: 'last7' }
     })
     expect(onDateFilterChange).toHaveBeenCalledWith('last7')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open session stats' }))
+    expect(onOpenStats).toHaveBeenCalledTimes(1)
   })
 
   it('shows clear-search button only when query exists and clears search', () => {

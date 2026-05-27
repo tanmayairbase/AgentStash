@@ -46,6 +46,7 @@ Current behavior:
 
 - debounced free-text search
 - filters for repository, model, estimated cost, origin, date, archived, starred, and sub-agent sessions
+- stats button beside Filters/Clear opens modal for current filtered-session cost summary
 - archived sessions hidden by default
 - separate archived-match handling during search
 - local archive/unarchive actions

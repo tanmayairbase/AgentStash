@@ -40,7 +40,12 @@ export const formatMinuteKeyIST = (isoLike: string): string => {
   return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}`
 }
 
-export type DateFilterPreset = 'today' | 'yesterday' | 'last7' | 'last30'
+export type DateFilterPreset =
+  | 'today'
+  | 'yesterday'
+  | 'last7'
+  | 'last14'
+  | 'last30'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
@@ -69,6 +74,9 @@ export const matchesIstDatePreset = (
   }
   if (preset === 'last7') {
     return targetDay >= nowDay - 6 && targetDay <= nowDay
+  }
+  if (preset === 'last14') {
+    return targetDay >= nowDay - 13 && targetDay <= nowDay
   }
   return targetDay >= nowDay - 29 && targetDay <= nowDay
 }

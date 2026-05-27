@@ -37,6 +37,9 @@ describe('matchesIstDatePreset', () => {
       true
     )
     expect(
+      matchesIstDatePreset('2026-02-27T10:00:00.000Z', 'last14', now)
+    ).toBe(true)
+    expect(
       matchesIstDatePreset('2026-02-20T10:00:00.000Z', 'last30', now)
     ).toBe(true)
     expect(

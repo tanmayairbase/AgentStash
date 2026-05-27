@@ -3,7 +3,8 @@ import {
   fireEvent,
   render,
   screen,
-  waitFor
+  waitFor,
+  within
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
@@ -251,10 +252,10 @@ describe('App sync detail refresh', () => {
     await waitFor(() => {
       expect(api.saveConfig).toHaveBeenCalledWith(darkConfig)
       expect(screen.getByText('Settings saved.')).toBeTruthy()
+      expect(document.documentElement.dataset.theme).toBe('dark')
     })
 
     expect(api.syncSessions).not.toHaveBeenCalled()
-    expect(document.documentElement.dataset.theme).toBe('dark')
   })
 
   it('hides sub-agent sessions by default and can show them from filters', async () => {
@@ -408,5 +409,181 @@ describe('App sync detail refresh', () => {
         0
       )
     })
+  })
+
+  it('shows stats modal for current filtered sessions', async () => {
+    const budgetSession: SessionSummary = {
+      ...baseSession,
+      id: 'session-budget',
+      title: 'Budget session',
+      tokenUsage: buildUsage([
+        {
+          modelId: 'gpt-5.4-mini',
+          inputTokens: 100_000,
+          cachedInputTokens: 0,
+          cacheWriteTokens: 0,
+          outputTokens: 100_000,
+          reasoningTokens: 0
+        }
+      ])
+    }
+    const mediumSession: SessionSummary = {
+      ...baseSession,
+      id: 'session-medium',
+      title: 'Medium session',
+      tokenUsage: buildUsage([
+        {
+          modelId: 'gpt-5.4',
+          inputTokens: 200_000,
+          cachedInputTokens: 0,
+          cacheWriteTokens: 0,
+          outputTokens: 200_000,
+          reasoningTokens: 0
+        }
+      ])
+    }
+    const unavailableSession: SessionSummary = {
+      ...baseSession,
+      id: 'session-unavailable',
+      title: 'Unavailable session',
+      tokenUsage: buildUsage([
+        {
+          modelId: 'mystery-llm-9000',
+          inputTokens: 10_000,
+          cachedInputTokens: 0,
+          cacheWriteTokens: 0,
+          outputTokens: 10_000,
+          reasoningTokens: 0
+        }
+      ])
+    }
+
+    const sessions = [budgetSession, mediumSession, unavailableSession]
+    const api: RendererApi = {
+      getConfig: vi.fn(async () => config),
+      saveConfig: vi.fn(async () => config),
+      openConfigFile: vi.fn(async () => undefined),
+      syncSessions: vi.fn(async () => syncResult),
+      listSessions: vi.fn(async () => sessions),
+      getSessionDetail: vi.fn(async sessionId => {
+        const detail = buildDetail(1)
+        return {
+          ...detail,
+          ...(sessions.find(session => session.id === sessionId) ?? budgetSession),
+          messages: detail.messages
+        }
+      }),
+      openSessionInTool: vi.fn(async () => ({ ok: true, message: 'ok' })),
+      setSessionArchived: vi.fn(async () => null),
+      setMessageStarred: vi.fn(async () => null),
+      listStarredMessages: vi.fn(async () => [])
+    }
+
+    ;(window as Window & { copilotSessions?: RendererApi }).copilotSessions = api
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Budget session').length).toBeGreaterThan(0)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Filters' }))
+    fireEvent.click(screen.getByLabelText('Estimated cost filter'))
+    fireEvent.click(screen.getByLabelText('Estimated cost: $$ ($2-$5)'))
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Medium session').length).toBeGreaterThan(0)
+      expect(screen.queryByText('Budget session')).toBeNull()
+      expect(screen.queryByText('Unavailable session')).toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open session stats' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Session stats' })
+    expect(within(dialog).getByTestId('stats-total-cost').textContent).toBe(
+      '$3.50'
+    )
+    expect(within(dialog).getByTestId('stats-session-count').textContent).toBe(
+      '1'
+    )
+    expect(
+      within(dialog).getByTestId('stats-unpriced-session-count').textContent
+    ).toBe('0')
+    expect(within(dialog).getByTestId('stats-average-cost').textContent).toBe(
+      '$3.50'
+    )
+    expect(within(dialog).getByTestId('stats-model-gpt-5.4')).toBeTruthy()
+    expect(within(dialog).queryByTestId('stats-model-gpt-5.4-mini')).toBeNull()
+  })
+
+  it('collapses model breakdown to first five rows and expands on demand', async () => {
+    const modelIds = [
+      'gpt-5.5',
+      'gpt-5.4',
+      'claude-opus-4.7',
+      'claude-sonnet-4.6',
+      'gemini-3.1-pro',
+      'gpt-5.4-mini'
+    ]
+    const sessions = modelIds.map((modelId, index) => ({
+      ...baseSession,
+      id: `session-${index + 1}`,
+      title: `Session ${index + 1}`,
+      model: modelId,
+      tokenUsage: buildUsage([
+        {
+          modelId,
+          inputTokens: 100_000 + index * 10_000,
+          cachedInputTokens: 0,
+          cacheWriteTokens: 0,
+          outputTokens: 100_000 + index * 10_000,
+          reasoningTokens: 0
+        }
+      ])
+    }))
+    const api: RendererApi = {
+      getConfig: vi.fn(async () => config),
+      saveConfig: vi.fn(async () => config),
+      openConfigFile: vi.fn(async () => undefined),
+      syncSessions: vi.fn(async () => syncResult),
+      listSessions: vi.fn(async () => sessions),
+      getSessionDetail: vi.fn(async sessionId => {
+        const detail = buildDetail(1)
+        return {
+          ...detail,
+          ...(sessions.find(session => session.id === sessionId) ?? sessions[0]!),
+          messages: detail.messages
+        }
+      }),
+      openSessionInTool: vi.fn(async () => ({ ok: true, message: 'ok' })),
+      setSessionArchived: vi.fn(async () => null),
+      setMessageStarred: vi.fn(async () => null),
+      listStarredMessages: vi.fn(async () => [])
+    }
+
+    ;(window as Window & { copilotSessions?: RendererApi }).copilotSessions = api
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Session 1').length).toBeGreaterThan(0)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open session stats' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Session stats' })
+    expect(
+      within(dialog).getByRole('button', { name: 'Show more (1 more)' })
+    ).toBeTruthy()
+    expect(within(dialog).queryByTestId('stats-model-gpt-5.4-mini')).toBeNull()
+
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Show more (1 more)' })
+    )
+
+    expect(within(dialog).getByTestId('stats-model-gpt-5.4-mini')).toBeTruthy()
+    expect(
+      within(dialog).getByRole('button', { name: 'Show less' })
+    ).toBeTruthy()
   })
 })

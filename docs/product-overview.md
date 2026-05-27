@@ -23,6 +23,7 @@ The current product is optimized for:
 - syncing local session history from multiple sources
 - full-text search plus lightweight filtering
 - fast cost-aware scanning with estimated cost chips and filtering when pricing metadata exists
+- consolidated stats for current filtered sessions, including estimated cost summaries and model breakdowns
 - read-only transcript review
 - local organization with starring and archiving
 - jumping back to source tools when deeper action is needed
