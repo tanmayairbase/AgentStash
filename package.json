@@ -1,7 +1,7 @@
 {
   "name": "copilot-sessions-hub",
   "productName": "Copilot Sessions Hub",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "description": "Desktop app to aggregate and search Copilot sessions across repositories",
   "main": "./out/main/index.js",
   "scripts": {
