@@ -177,4 +177,102 @@ describe('syncSessions incremental parsing', () => {
       storage.getSessionDetail('session-incremental-1')?.messages
     ).toHaveLength(2)
   })
+
+  it('keeps Copilot app general chats even when cwd is outside repo roots', async () => {
+    const tempDir = await fs.mkdtemp(join(tmpdir(), 'copilot-sync-chat-'))
+    const repoRoot = join(tempDir, 'repo')
+    const chatArtifactPath = join(
+      tempDir,
+      'home',
+      '.copilot',
+      'session-state',
+      'general-chat-1',
+      'events.jsonl'
+    )
+    const chatCwd = join(
+      tempDir,
+      'home',
+      '.copilot',
+      'chats',
+      'scratch-chat-1'
+    )
+    const storage = new SessionStorage(join(tempDir, 'sessions-store.json'))
+
+    fgMock.mockImplementation(
+      async (patterns: unknown, options?: { cwd?: string }) => {
+        if (options?.cwd === repoRoot) {
+          return []
+        }
+        if (
+          typeof patterns === 'string' &&
+          patterns.includes('/.copilot/session-state/')
+        ) {
+          return [chatArtifactPath]
+        }
+        return []
+      }
+    )
+
+    parseSessionArtifactsMock.mockImplementation(
+      (
+        raw: string,
+        context: {
+          filePath: string
+          repoRoot: string
+          source: SessionSource
+        }
+      ) => {
+        const payload = JSON.parse(raw) as TestArtifactPayload
+        return [
+          {
+            session: {
+              id: payload.id,
+              source: context.source,
+              repoPath: chatCwd,
+              title: payload.message.slice(0, 120),
+              model: 'gpt-5.4',
+              createdAt: payload.updatedAt,
+              updatedAt: payload.updatedAt,
+              messageCount: 2,
+              filePath: context.filePath,
+              openVscodeTarget: context.filePath,
+              openCliCwd: chatCwd
+            },
+            messages: [
+              {
+                id: `${payload.id}-u1`,
+                sessionId: payload.id,
+                role: 'user' as const,
+                content: payload.message,
+                format: 'text' as const,
+                timestamp: payload.updatedAt
+              },
+              {
+                id: `${payload.id}-a1`,
+                sessionId: payload.id,
+                role: 'assistant' as const,
+                content: `response:${payload.message}`,
+                format: 'text' as const,
+                timestamp: payload.updatedAt
+              }
+            ]
+          }
+        ]
+      }
+    )
+
+    await writeArtifact(chatArtifactPath, {
+      id: 'general-chat-1',
+      updatedAt: '2026-06-18T06:56:02.930Z',
+      message: 'RQ hook typing'
+    })
+
+    const result = await syncSessions(buildConfig(repoRoot), storage)
+
+    expect(result.filesScanned).toBe(1)
+    expect(result.sessionsImported).toBe(1)
+    expect(storage.list('').find(row => row.id === 'general-chat-1')?.repoPath).toBe(
+      chatCwd
+    )
+  })
 })

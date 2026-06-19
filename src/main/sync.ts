@@ -83,8 +83,31 @@ const COPILOT_SESSION_STORE_DB_PATH = join(
   '.copilot',
   'session-store.db'
 )
+const COPILOT_CHAT_CWD = resolve(homedir(), '.copilot', 'chats')
 
 const workspaceRepoCache = new Map<string, string | null>()
+
+const normalizePathForComparison = (value: string): string =>
+  resolve(expandHome(value)).replace(/\\/g, '/')
+
+const isCopilotChatCwd = (value: string): boolean => {
+  const normalizedValue = normalizePathForComparison(value)
+  const normalizedChatRoot = normalizePathForComparison(COPILOT_CHAT_CWD)
+  return (
+    normalizedValue === normalizedChatRoot ||
+    normalizedValue.startsWith(`${normalizedChatRoot}/`)
+  )
+}
+
+const shouldIncludeArtifact = (
+  artifact: SessionInsert,
+  repoRoots: string[]
+): boolean => {
+  if (isWithinRepoRoots(artifact.session.repoPath, repoRoots)) {
+    return true
+  }
+  return artifact.session.source === 'cli' && isCopilotChatCwd(artifact.session.repoPath)
+}
 
 const repoRootFromVsCodeWorkspaceStorage = async (
   filePath: string
@@ -376,7 +399,7 @@ export const syncSessions = async (
         skippedUnchanged += 1
         nextArtifactCacheByPath.set(filePath, cached)
         for (const artifact of cached.inserts) {
-          if (!isWithinRepoRoots(artifact.session.repoPath, repoRoots)) {
+          if (!shouldIncludeArtifact(artifact, repoRoots)) {
             ignoredByRepoFilter += 1
             continue
           }
@@ -399,7 +422,7 @@ export const syncSessions = async (
       })
 
       for (const artifact of parsed) {
-        if (!isWithinRepoRoots(artifact.session.repoPath, repoRoots)) {
+        if (!shouldIncludeArtifact(artifact, repoRoots)) {
           ignoredByRepoFilter += 1
           continue
         }
