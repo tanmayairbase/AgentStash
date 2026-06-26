@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type {
   AppConfig,
   AppearancePreference,
+  AutoDiscoveredPatternInfo,
   DiscoveryMode,
   SyncMode
 } from '@shared/types'
@@ -9,11 +10,18 @@ import type {
 interface Props {
   isOpen: boolean
   config: AppConfig | null
+  autoDiscoveredPatterns: AutoDiscoveredPatternInfo[]
   onClose: () => void
   onSave: (next: AppConfig) => Promise<void>
 }
 
-export const SettingsModal = ({ isOpen, config, onClose, onSave }: Props) => {
+export const SettingsModal = ({
+  isOpen,
+  config,
+  autoDiscoveredPatterns,
+  onClose,
+  onSave
+}: Props) => {
   const [repoRoots, setRepoRoots] = useState('')
   const [explicitPatterns, setExplicitPatterns] = useState('')
   const [discoveryMode, setDiscoveryMode] = useState<DiscoveryMode>('both')
@@ -122,6 +130,23 @@ export const SettingsModal = ({ isOpen, config, onClose, onSave }: Props) => {
             <option value="explicit">Explicit patterns only</option>
           </select>
         </label>
+
+        {autoDiscoveredPatterns.length > 0 && (
+          <div className="settings-auto-discovery">
+            <p>
+              Always scanned on this machine, regardless of discovery mode or
+              the explicit patterns below:
+            </p>
+            <ul>
+              {autoDiscoveredPatterns.map(item => (
+                <li key={item.label}>
+                  <strong>{item.label}</strong>
+                  <code>{item.pattern}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <label>
           Explicit glob patterns (one per line)

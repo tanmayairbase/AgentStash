@@ -33,6 +33,7 @@ describe('SettingsModal', () => {
       <SettingsModal
         isOpen={true}
         config={baseConfig}
+        autoDiscoveredPatterns={[]}
         onClose={onClose}
         onSave={onSave}
       />
@@ -65,6 +66,7 @@ describe('SettingsModal', () => {
       <SettingsModal
         isOpen={true}
         config={baseConfig}
+        autoDiscoveredPatterns={[]}
         onClose={onClose}
         onSave={onSave}
       />
@@ -109,6 +111,7 @@ describe('SettingsModal', () => {
       <SettingsModal
         isOpen={true}
         config={baseConfig}
+        autoDiscoveredPatterns={[]}
         onClose={onClose}
         onSave={onSave}
       />
@@ -130,5 +133,41 @@ describe('SettingsModal', () => {
       })
       expect(onClose).toHaveBeenCalledTimes(1)
     })
+  })
+
+  it('lists the always-on auto-discovered patterns', () => {
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[
+          {
+            label: 'Claude Code sessions',
+            pattern: '/Users/me/.claude/projects/**/*.jsonl'
+          }
+        ]}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(screen.getByText('Claude Code sessions')).not.toBeNull()
+    expect(
+      screen.getByText('/Users/me/.claude/projects/**/*.jsonl')
+    ).not.toBeNull()
+  })
+
+  it('renders no auto-discovery section when the list is empty', () => {
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(screen.queryByText(/Always scanned/)).toBeNull()
   })
 })

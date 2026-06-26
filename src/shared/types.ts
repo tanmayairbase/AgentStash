@@ -138,10 +138,16 @@ export interface SyncResult {
   errors: string[]
 }
 
+export interface AutoDiscoveredPatternInfo {
+  label: string
+  pattern: string
+}
+
 export interface RendererApi {
   getConfig: () => Promise<AppConfig>
   saveConfig: (config: AppConfig) => Promise<AppConfig>
   openConfigFile: () => Promise<void>
+  getAutoDiscoveredPatterns: () => Promise<AutoDiscoveredPatternInfo[]>
   syncSessions: () => Promise<SyncResult>
   listSessions: (query: string) => Promise<SessionSummary[]>
   getSessionDetail: (sessionId: string) => Promise<SessionDetail | null>

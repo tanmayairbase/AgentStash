@@ -1226,6 +1226,31 @@ button:hover {
   color: var(--text-error);
 }
 
+.settings-auto-discovery {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.settings-auto-discovery ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.settings-auto-discovery li strong {
+  margin-right: 6px;
+}
+
+.settings-auto-discovery code {
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
 .stats-modal {
   width: min(840px, 92vw);
   max-height: min(80vh, 720px);

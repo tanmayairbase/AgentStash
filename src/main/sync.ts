@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import fg from 'fast-glob'
 import type {
   AppConfig,
+  AutoDiscoveredPatternInfo,
   SessionSource,
   SessionSummary,
   SyncResult
@@ -90,6 +91,25 @@ const globalClaudeCodePattern = (() => {
   const home = homedir()
   return getGlobalClaudeCodePattern(home)
 })()
+
+// Surfaces the same patterns syncSessions() globs below, so the Settings UI
+// can show users what's already covered without them re-deriving it via
+// explicitPatterns. Built from the same generator functions (and the same
+// default args) as the globalXPattern constants above, so it can't drift
+// from what's actually scanned.
+export const getAutoDiscoveredPatterns = (
+  platform: NodeJS.Platform = process.platform,
+  home: string = homedir(),
+  appData: string = process.env.APPDATA || home
+): AutoDiscoveredPatternInfo[] => [
+  { label: 'Copilot CLI session history', pattern: getGlobalCopilotPattern(home) },
+  {
+    label: 'VS Code Copilot Chat sessions',
+    pattern: getGlobalVsCodeChatPattern(platform, home, appData)
+  },
+  { label: 'Claude Code sessions', pattern: getGlobalClaudeCodePattern(home) }
+]
+
 const COPILOT_SESSION_STORE_DB_PATH = join(
   homedir(),
   '.copilot',

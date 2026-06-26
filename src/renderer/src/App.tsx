@@ -9,6 +9,7 @@ import React, {
 import type {
   AppConfig,
   AppearancePreference,
+  AutoDiscoveredPatternInfo,
   RendererApi,
   SessionDetail,
   SessionSource,
@@ -168,6 +169,9 @@ export const App = () => {
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
   const [config, setConfig] = useState<AppConfig | null>(null)
+  const [autoDiscoveredPatterns, setAutoDiscoveredPatterns] = useState<
+    AutoDiscoveredPatternInfo[]
+  >([])
   const [showSettings, setShowSettings] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -340,8 +344,12 @@ export const App = () => {
     const init = async (): Promise<void> => {
       try {
         uiLog('Initializing app state')
-        const loadedConfig = await ensureApi().getConfig()
+        const [loadedConfig, loadedAutoDiscoveredPatterns] = await Promise.all([
+          ensureApi().getConfig(),
+          ensureApi().getAutoDiscoveredPatterns()
+        ])
         setConfig(loadedConfig)
+        setAutoDiscoveredPatterns(loadedAutoDiscoveredPatterns)
         uiLog('Config loaded in renderer', {
           repoRoots: loadedConfig.repoRoots.length,
           discoveryMode: loadedConfig.discoveryMode,
@@ -1087,6 +1095,7 @@ export const App = () => {
       <SettingsModal
         isOpen={showSettings}
         config={config}
+        autoDiscoveredPatterns={autoDiscoveredPatterns}
         onClose={() => setShowSettings(false)}
         onSave={onSaveConfig}
       />

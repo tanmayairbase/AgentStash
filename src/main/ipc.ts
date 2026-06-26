@@ -4,7 +4,7 @@ import { ConfigService } from './config'
 import { logError, logInfo, logWarn } from './logger'
 import { openInCli, openInVscode } from './openers'
 import { SessionStorage } from './storage'
-import { syncSessions } from './sync'
+import { getAutoDiscoveredPatterns, syncSessions } from './sync'
 
 export const registerIpcHandlers = (
   storage: SessionStorage,
@@ -29,6 +29,11 @@ export const registerIpcHandlers = (
       explicitPatterns: config.explicitPatterns.length
     })
     return configService.save(config)
+  })
+
+  ipcMain.handle('config:get-auto-discovered-patterns', async () => {
+    logInfo('IPC config:get-auto-discovered-patterns')
+    return getAutoDiscoveredPatterns()
   })
 
   ipcMain.handle('config:open-file', async () => {

@@ -55,6 +55,8 @@ const api: RendererApi = {
   saveConfig: async (config: AppConfig) =>
     ipcRenderer.invoke('config:save', config),
   openConfigFile: async () => ipcRenderer.invoke('config:open-file'),
+  getAutoDiscoveredPatterns: async () =>
+    ipcRenderer.invoke('config:get-auto-discovered-patterns'),
   syncSessions: async () => ipcRenderer.invoke('sessions:sync'),
   listSessions: async (query: string) =>
     ipcRenderer.invoke('sessions:list', query),
