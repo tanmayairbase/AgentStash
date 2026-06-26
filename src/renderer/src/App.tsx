@@ -995,7 +995,7 @@ export const App = () => {
   return (
     <div className="app-root">
       <header className="topbar">
-        <h1>Copilot Sessions Hub</h1>
+        <h1>AgentStash</h1>
 
         <div className="topbar-actions">
           <button

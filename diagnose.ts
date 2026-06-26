@@ -6,7 +6,7 @@ const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
 
 const diagnose = async (): Promise<void> => {
-  console.log('=== Copilot Sessions Hub - Windows Diagnostics ===\n')
+  console.log('=== AgentStash - Windows Diagnostics ===\n')
 
   const home = homedir()
   const appData = process.env.APPDATA ?? null

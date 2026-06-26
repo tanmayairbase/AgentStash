@@ -1,4 +1,4 @@
-# Copilot Sessions Hub Docs
+# AgentStash Docs
 
 This folder is the contributor handbook for the app.
 

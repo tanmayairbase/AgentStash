@@ -2,17 +2,17 @@
 
 ## What this app is
 
-`Copilot Sessions Hub` is a read-only desktop viewer for Copilot session history.
+`AgentStash` is a read-only desktop viewer for AI coding agent session history.
 
 It aggregates local session data from multiple tools, normalizes it into one model, and makes it easy to search and review old conversations.
 
-It is **not** a chat client and does not send prompts to Copilot.
+It is **not** a chat client and does not send prompts to any agent.
 
 ## Pain points it addresses
 
-- Copilot session history is fragmented across tools and repositories, with no single place to browse it.
+- AI coding session history is fragmented across tools and repositories, with no single place to browse it.
 - Past prompts, responses, and decisions are hard to rediscover once a session is closed.
-- There is no reliable full-text search across both user prompts and Copilot responses across all sessions.
+- There is no reliable full-text search across both user prompts and agent responses across all sessions.
 - Session history can disappear after retention limits, making older conversations hard or impossible to revisit later.
 - As session volume grows, history becomes noisy and harder to organize without filtering, starring, and archiving.
 
@@ -38,7 +38,7 @@ The current product is optimized for:
 ## Core UX rules
 
 - The app is **read-only**.
-- User messages render on the right; Copilot messages render on the left.
+- User messages render on the right; agent messages render on the left.
 - Timestamps are shown in **IST**.
 - Switching sessions resets the transcript view to the **top**.
 - Transcript links open in the **default external browser**.

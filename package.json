@@ -1,8 +1,8 @@
 {
-  "name": "copilot-sessions-hub",
-  "productName": "Copilot Sessions Hub",
+  "name": "agentstash",
+  "productName": "AgentStash",
   "version": "10.0.0",
-  "description": "Desktop app to aggregate and search Copilot sessions across repositories",
+  "description": "A single place to search, read and persist every AI coding session — Copilot, OpenCode, and Claude Code — kept locally forever.",
   "main": "./out/main/index.js",
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
@@ -59,8 +59,8 @@
     "vitest": "^4.0.18"
   },
   "build": {
-    "appId": "com.local.copilot-sessions-hub",
-    "productName": "Copilot Sessions Hub",
+    "appId": "com.local.agentstash",
+    "productName": "AgentStash",
     "files": [
       "out/**",
       "node_modules/**",
@@ -70,13 +70,13 @@
       "output": "release"
     },
     "mac": {
-      "icon": "build/icons/robot.icns",
+      "icon": "build/icons/agentstash.icns",
       "target": [
         "dmg"
       ]
     },
     "win": {
-      "icon": "build/icons/robot.ico",
+      "icon": "build/icons/agentstash.ico",
       "target": [
         "nsis"
       ]

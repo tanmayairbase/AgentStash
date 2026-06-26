@@ -1,13 +1,14 @@
 <p align="center">
-  <img src="build/icons/robot-512.png" alt="Copilot Sessions Hub logo" width="140" />
+  <img src="build/icons/agentstash-512.png" alt="AgentStash logo" width="140" />
 </p>
 
-<h1 align="center">Copilot Sessions Hub</h1>
+<h1 align="center">AgentStash</h1>
 
 <p align="center">
-  Desktop Electron app (TypeScript + Node 24) that aggregates Copilot sessions from multiple repositories,
-  provides full-text search in a resizable left sidebar, and renders selected session details in a chat-style
-  main pane.
+  A single place to search, read and persist every AI coding session — Copilot, OpenCode, and Claude Code —
+  kept locally forever. Desktop Electron app (TypeScript + Node 24) that aggregates sessions from multiple
+  repositories, provides full-text search in a resizable left sidebar, and renders selected session details
+  in a chat-style main pane.
 </p>
 
 <p align="center">
@@ -20,7 +21,7 @@
 </p>
 
 <p align="center">
-  <img width="1398" height="901" alt="Copilot Sessions Hub screenshot" src="https://github.com/user-attachments/assets/274fa0f2-f7e5-48ab-b15c-183f029b8f09" />
+  <img width="1398" height="901" alt="AgentStash screenshot" src="https://github.com/user-attachments/assets/274fa0f2-f7e5-48ab-b15c-183f029b8f09" />
 ...
   <img width="1727" height="513" alt="Status_and_Copilot_Sessions_Hub" src="https://github.com/user-attachments/assets/0ca69550-510c-4fa2-b5ea-1d88bf80d4a4" />
 
@@ -28,9 +29,9 @@
 
 ## Pain points this app addresses
 
-- Copilot session history is fragmented across tools and repositories, with no single place to browse it.
+- AI coding session history is fragmented across tools and repositories, with no single place to browse it.
 - Past prompts, responses, and decisions are hard to rediscover once a session is closed.
-- There is no reliable full-text search across both user prompts and Copilot responses across all sessions.
+- There is no reliable full-text search across both user prompts and agent responses across all sessions.
 - Session history can disappear after retention limits, making older conversations hard or impossible to revisit later.
 - As session volume grows, history becomes noisy and harder to organize without filtering, starring, and archiving.
 
@@ -141,7 +142,7 @@ Artifacts are generated in `release/`.
 Windows packaging outputs an installer like:
 
 ```text
-release/Copilot Sessions Hub Setup <version>.exe
+release/AgentStash Setup <version>.exe
 ```
 
 On macOS, cross-building Windows installers may download Wine/NSIS helper binaries on the first run, so the first packaging pass can take longer.

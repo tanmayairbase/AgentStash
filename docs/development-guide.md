@@ -145,7 +145,7 @@ pnpm package:win:arm64
 Expected Windows installer artifact:
 
 ```text
-release/Copilot Sessions Hub Setup <version>.exe
+release/AgentStash Setup <version>.exe
 ```
 
 Notes:

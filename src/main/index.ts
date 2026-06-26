@@ -8,11 +8,11 @@ import { registerIpcHandlers } from './ipc'
 import { initializeLogger, logInfo, logWarn } from './logger'
 import { SessionStorage } from './storage'
 
-const APP_DISPLAY_NAME = 'Copilot Sessions Hub'
+const APP_DISPLAY_NAME = 'AgentStash'
 const CANONICAL_USER_DATA_DIR = 'Copilot Sessions Hub'
 const currentDir = fileURLToPath(new URL('.', import.meta.url))
 const devIconPath = (): string =>
-  join(process.cwd(), 'build/icons/robot-512.png')
+  join(process.cwd(), 'build/icons/agentstash-512.png')
 app.setName(APP_DISPLAY_NAME)
 
 const resolveTheme = (
