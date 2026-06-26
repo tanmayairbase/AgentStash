@@ -426,7 +426,7 @@ export const App = () => {
     [sessions]
   )
   const originOptions = useMemo(
-    () => ['vscode', 'cli', 'opencode'] as SessionSource[],
+    () => ['vscode', 'cli', 'opencode', 'claude'] as SessionSource[],
     []
   )
   const estimatedCostOptions = useMemo(
