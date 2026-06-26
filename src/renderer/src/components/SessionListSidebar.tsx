@@ -6,6 +6,7 @@ import type {
 } from '@shared/types'
 import type { DateFilterPreset } from '@shared/format'
 import {
+  formatAgentName,
   formatSessionOrigin,
   formatTimestampIST,
   toSearchPreview,
@@ -735,7 +736,9 @@ export const SessionListSidebar = ({
                   >
                     <div className="starred-item-top">
                       <span className="starred-item-role">
-                        {star.role === 'user' ? 'You' : 'Copilot'}
+                        {star.role === 'user'
+                          ? 'You'
+                          : formatAgentName(star.sessionSource)}
                       </span>
                       {star.stale && (
                         <span className="starred-item-stale">Stale</span>

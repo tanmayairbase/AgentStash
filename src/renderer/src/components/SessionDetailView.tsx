@@ -16,6 +16,7 @@ import type {
   SessionTokenUsage
 } from '@shared/types'
 import {
+  formatAgentName,
   formatMinuteKeyIST,
   formatSessionOrigin,
   formatTimestampIST,
@@ -491,7 +492,7 @@ export const SessionDetailView = ({
             >
               <div className="message-header">
                 <div className="message-role">
-                  {message.role === 'user' ? 'You' : 'Copilot'}
+                  {message.role === 'user' ? 'You' : formatAgentName(detail.source)}
                   {message.role === 'user' && message.mode ? (
                     <span
                       className={`message-mode-pill message-mode-pill-${message.mode}`}

@@ -121,6 +121,13 @@ export const formatSessionOrigin = (origin: SessionSource): string => {
   return 'CLI'
 }
 
+export const formatAgentName = (source: SessionSource): string => {
+  if (source === 'claude') {
+    return 'Claude Code'
+  }
+  return 'Copilot'
+}
+
 export const matchesRepositoryFilter = (
   sessionRepoPath: string,
   selectedRepoPaths: string[]
