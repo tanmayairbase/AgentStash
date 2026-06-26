@@ -157,7 +157,8 @@ Main IPC channels:
 | `src/main/config.ts` | config schema/defaults/load/save |
 | `src/main/storage.ts` | persistence, indexes, detail assembly |
 | `src/main/sync.ts` | discovery, cache-aware sync orchestration |
-| `src/main/parsers.ts` | JSON/JSONL normalization |
+| `src/main/parsers/index.ts` | JSON/JSONL normalization, parser routing by file path |
+| `src/main/parsers/claude.ts` | Claude Code session log parsing |
 | `src/main/opencode.ts` | OpenCode SQLite ingestion |
 | `src/main/openers.ts` | open-in-tool behavior |
 | `src/preload/index.ts` | typed renderer bridge |

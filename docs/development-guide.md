@@ -78,6 +78,7 @@ docs/          contributor documentation
 | Test file | Focus |
 | --- | --- |
 | `tests/parsers.test.ts` | parser normalization |
+| `tests/sync-claude-code.test.ts` | Claude Code session discovery/parsing |
 | `tests/storage-retention.test.ts` | retention, stars, archive behavior |
 | `tests/storage-perf-benchmark.test.ts` | high-volume storage performance checks |
 | `tests/sync-incremental.test.ts` | incremental sync behavior |

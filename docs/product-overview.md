@@ -33,6 +33,7 @@ The current product is optimized for:
 - **Copilot CLI**
 - **VS Code Copilot Chat**
 - **OpenCode**
+- **Claude Code**
 
 ## Core UX rules
 
@@ -41,7 +42,7 @@ The current product is optimized for:
 - Timestamps are shown in **IST**.
 - Switching sessions resets the transcript view to the **top**.
 - Transcript links open in the **default external browser**.
-- Plan/autopilot metadata, when available from Copilot CLI, is shown only at the **message level**.
+- Plan/autopilot metadata, when available from Copilot CLI or Claude Code, is shown only at the **message level**.
 
 ## Important data behaviors
 
@@ -55,7 +56,7 @@ The current product is optimized for:
 
 The app does **not** currently aim to:
 
-- replace Copilot CLI, VS Code, or OpenCode as authoring tools
+- replace Copilot CLI, VS Code, OpenCode, or Claude Code as authoring tools
 - support in-app chatting or editing
 - expose hidden or raw chain-of-thought
 - sync data to a backend

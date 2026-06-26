@@ -7,7 +7,7 @@ This layer turns upstream session artifacts into the app’s local searchable hi
 Primary files:
 
 - `src/main/sync.ts`
-- `src/main/parsers.ts`
+- `src/main/parsers/index.ts`
 - `src/main/opencode.ts`
 - `src/main/storage.ts`
 
@@ -19,6 +19,7 @@ Primary files:
 | Copilot CLI summaries | `~/.copilot/session-store.db` | improves titles and cache invalidation |
 | VS Code Copilot Chat | workspace storage chat session JSONL | repo path inferred from workspace metadata when possible |
 | OpenCode | `~/.local/share/opencode/opencode.db` | loaded from SQLite tables |
+| Claude Code | `~/.claude/projects/**/*.jsonl` | repo path inferred from each line's `cwd`, falling back to the configured repo root |
 
 ## Sync flow
 
@@ -68,7 +69,7 @@ Scan behavior:
 - skips missing or invalid repo roots
 - ignores `node_modules`, `.git`, `dist`, `build`, `release`
 - enforces a max file size before parsing
-- also reads global Copilot and VS Code locations when relevant
+- also reads global Copilot, VS Code, and Claude Code locations when relevant
 
 ## Artifact cache
 
@@ -99,7 +100,7 @@ Core types:
 
 Important normalized fields:
 
-- source: `cli` / `vscode` / `opencode`
+- source: `cli` / `vscode` / `opencode` / `claude`
 - repo path
 - title
 - model
@@ -115,7 +116,7 @@ Important normalized fields:
 
 Primary file:
 
-- `src/main/parsers.ts`
+- `src/main/parsers/index.ts`
 
 The parser handles:
 
@@ -124,6 +125,20 @@ The parser handles:
 - stable message IDs
 - source inference for ambiguous files
 - CLI plan/autopilot extraction where explicit signals exist
+
+### Claude Code
+
+Primary file:
+
+- `src/main/parsers/claude.ts`
+
+The Claude Code parser:
+
+- reads `~/.claude/projects/**/*.jsonl`, always tagging sessions with source `claude`
+- extracts user/assistant text and thinking blocks from content blocks
+- maps `permissionMode` to `plan`/`autopilot` execution mode
+- reconstructs `AskUserQuestion` tool calls and their answers from tool_result text
+- aggregates per-model token usage (`claude-messages` token usage source)
 
 ### OpenCode
 
@@ -208,7 +223,8 @@ The model is intentionally simple: prebuilt lowercase haystacks with local subst
 | --- | --- |
 | add/change config fields | `src/main/config.ts`, `src/shared/types.ts` |
 | change discovery rules | `src/main/sync.ts` |
-| change parsing behavior | `src/main/parsers.ts` |
+| change parsing behavior | `src/main/parsers/index.ts` |
+| change Claude Code ingestion | `src/main/parsers/claude.ts` |
 | change OpenCode ingestion | `src/main/opencode.ts` |
 | change retention/archive/star semantics | `src/main/storage.ts` |
 | change search indexing | `src/main/storage.ts` |

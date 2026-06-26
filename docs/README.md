@@ -39,7 +39,8 @@ These docs explain:
 | Electron bootstrap | `src/main/index.ts` |
 | Config | `src/main/config.ts` |
 | Sync/discovery | `src/main/sync.ts` |
-| Parsing | `src/main/parsers.ts` |
+| Parsing | `src/main/parsers/index.ts` |
+| Claude Code ingestion | `src/main/parsers/claude.ts` |
 | OpenCode ingestion | `src/main/opencode.ts` |
 | Storage/search/detail | `src/main/storage.ts` |
 | IPC | `src/main/ipc.ts` |

@@ -36,7 +36,7 @@
 
 ## Features
 
-- Aggregates sessions from Copilot CLI, VS Code Copilot Chat, and OpenCode into one desktop view.
+- Aggregates sessions from Copilot CLI, VS Code Copilot Chat, OpenCode, and Claude Code into one desktop view.
 - Syncs from configurable repository roots and keeps synced history locally for later rediscovery.
 - Provides full-text search plus repository, model, estimated cost, origin, date, archived, starred, and sub-agent filters.
 - Surfaces per-session estimated cost as `$`, `$$`, or `$$$` chips when pricing data is available, with an `Unavailable` filter bucket when no total can be computed.
@@ -192,6 +192,7 @@ Config shape:
 }
 ```
 
+- Regardless of `discoveryMode`, the app always scans the global Copilot CLI, VS Code Copilot Chat, and Claude Code session paths (e.g. `~/.claude/projects/**/*.jsonl`) so those sources are picked up without any config. The exact paths are listed in the Settings modal.
 - `discoveryMode: "autodiscovery"` uses built-in patterns.
 - `discoveryMode: "explicit"` uses only `explicitPatterns`.
 - `discoveryMode: "both"` combines both.

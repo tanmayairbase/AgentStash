@@ -90,7 +90,7 @@ This is intentionally optimized for review rather than “resume where I left of
 
 ## Message-level mode styling
 
-For Copilot CLI sessions, the app can style user messages with:
+For Copilot CLI and Claude Code sessions, the app can style user messages with:
 
 - `Plan`
 - `Autopilot`
