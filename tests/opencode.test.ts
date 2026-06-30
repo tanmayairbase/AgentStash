@@ -124,6 +124,7 @@ describe('aggregateOpenCodeTokenUsage', () => {
         inputTokens: 0,
         cachedInputTokens: 0,
         cacheWriteTokens: 0,
+        cacheWrite1hTokens: 0,
         outputTokens: 0,
         reasoningTokens: 0
       }
@@ -163,6 +164,7 @@ describe('aggregateOpenCodeTokenUsage', () => {
       inputTokens: 3000,
       cachedInputTokens: 1200,
       cacheWriteTokens: 100,
+      cacheWrite1hTokens: 0,
       outputTokens: 500,
       reasoningTokens: 50
     })
@@ -171,6 +173,7 @@ describe('aggregateOpenCodeTokenUsage', () => {
       inputTokens: 800,
       cachedInputTokens: 0,
       cacheWriteTokens: 0,
+      cacheWrite1hTokens: 0,
       outputTokens: 100,
       reasoningTokens: 30
     })
@@ -178,6 +181,7 @@ describe('aggregateOpenCodeTokenUsage', () => {
       inputTokens: 3800,
       cachedInputTokens: 1200,
       cacheWriteTokens: 100,
+      cacheWrite1hTokens: 0,
       outputTokens: 600,
       reasoningTokens: 80
     })

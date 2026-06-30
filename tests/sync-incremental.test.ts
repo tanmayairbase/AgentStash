@@ -17,6 +17,7 @@ vi.mock('fast-glob', () => ({
 }))
 
 vi.mock('../src/main/parsers', () => ({
+  matchFixedSessionSource: () => null,
   parseSessionArtifacts: parseSessionArtifactsMock
 }))
 

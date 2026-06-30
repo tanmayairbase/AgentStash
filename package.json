@@ -1,8 +1,12 @@
 {
   "name": "agentstash",
   "productName": "AgentStash",
-  "version": "10.0.0",
+  "version": "11.0.0",
   "description": "A single place to search, read and persist every AI coding session — Copilot, OpenCode, and Claude Code — kept locally forever.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tanmayairbase/AgentStash.git"
+  },
   "main": "./out/main/index.js",
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
@@ -37,6 +41,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
