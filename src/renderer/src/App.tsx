@@ -85,6 +85,11 @@ interface PendingSyncRequest {
   waiters: SyncWaiter[]
 }
 
+interface PendingUpdateCheck {
+  force: boolean
+  showErrors: boolean
+}
+
 interface BackgroundSyncStatus {
   state: 'idle' | 'running' | 'queued' | 'success' | 'error'
   lastSyncedAt: string | null
@@ -210,6 +215,7 @@ export const App = () => {
   const syncInFlightRef = useRef(false)
   const queuedSyncRef = useRef<PendingSyncRequest | null>(null)
   const updateCheckInFlightRef = useRef(false)
+  const queuedUpdateCheckRef = useRef<PendingUpdateCheck | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     const value = Number(
       window.localStorage.getItem(SIDEBAR_WIDTH_KEY) ?? '360'
@@ -230,6 +236,19 @@ export const App = () => {
   const requestUpdateCheck = useCallback(
     async (force: boolean, showErrors: boolean): Promise<void> => {
       if (updateCheckInFlightRef.current) {
+        if (force || showErrors) {
+          const queued = queuedUpdateCheckRef.current
+          queuedUpdateCheckRef.current = {
+            force: force || queued?.force === true,
+            showErrors: showErrors || queued?.showErrors === true
+          }
+          if (force) {
+            setIsCheckingUpdates(true)
+          }
+          if (showErrors) {
+            setUpdateError(null)
+          }
+        }
         return
       }
       updateCheckInFlightRef.current = true
@@ -248,8 +267,12 @@ export const App = () => {
         }
         uiLog('Update check failed', { message: (error as Error).message })
       } finally {
+        const queued = queuedUpdateCheckRef.current
+        queuedUpdateCheckRef.current = null
         updateCheckInFlightRef.current = false
-        if (force) {
+        if (queued) {
+          void requestUpdateCheck(queued.force, queued.showErrors)
+        } else if (force) {
           setIsCheckingUpdates(false)
         }
       }
@@ -1112,6 +1135,11 @@ export const App = () => {
             type="button"
             onClick={() => setShowSettings(true)}
             disabled={!config}
+            aria-label={
+              updateStatus?.notificationVisible && !isDownloadingUpdate
+                ? 'Settings, update available'
+                : 'Settings'
+            }
             className={
               updateStatus?.notificationVisible && !isDownloadingUpdate
                 ? 'topbar-button-with-dot'

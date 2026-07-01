@@ -29,6 +29,25 @@ const updateStatus: AppUpdateStatus = {
   notificationVisible: false
 }
 
+const availableUpdateStatus: AppUpdateStatus = {
+  currentVersion: '11.0.0',
+  latest: {
+    version: '12.0.0',
+    releaseUrl:
+      'https://github.com/tanmayairbase/AgentStash/releases/tag/12.0.0',
+    publishedAt: '2026-07-01T00:00:00.000Z',
+    assetName: 'AgentStash-12.0.0-arm64.dmg',
+    assetUrl:
+      'https://github.com/tanmayairbase/AgentStash/releases/download/12.0.0/AgentStash-12.0.0-arm64.dmg',
+    assetSize: 123,
+    assetDigest: 'abc123'
+  },
+  lastCheckedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  dismissedVersion: null,
+  updateAvailable: true,
+  notificationVisible: true
+}
+
 const updateProps = {
   updateStatus,
   isCheckingUpdates: false,
@@ -194,5 +213,88 @@ describe('SettingsModal', () => {
     )
 
     expect(screen.queryByText(/Always scanned/)).toBeNull()
+  })
+
+  it('renders update status and wires update actions', () => {
+    const onCheckUpdates = vi.fn(async () => undefined)
+    const onDownloadUpdate = vi.fn(async () => undefined)
+    const onDismissUpdate = vi.fn(async () => undefined)
+
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        {...updateProps}
+        updateStatus={availableUpdateStatus}
+        onCheckUpdates={onCheckUpdates}
+        onDownloadUpdate={onDownloadUpdate}
+        onDismissUpdate={onDismissUpdate}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(screen.getByText('Version 12.0.0 is available.')).toBeTruthy()
+    expect(screen.getByText(/Last checked: 2h ago/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Check for updates' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Download update' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Dismiss this version' })
+    )
+
+    expect(onCheckUpdates).toHaveBeenCalledTimes(1)
+    expect(onDownloadUpdate).toHaveBeenCalledTimes(1)
+    expect(onDismissUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides dismiss after the latest version has been dismissed', () => {
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        {...updateProps}
+        updateStatus={{
+          ...availableUpdateStatus,
+          dismissedVersion: availableUpdateStatus.latest?.version ?? null,
+          notificationVisible: false
+        }}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Download update' })).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: 'Dismiss this version' })
+    ).toBeNull()
+  })
+
+  it('shows update progress and errors while disabling check actions', () => {
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        {...updateProps}
+        isCheckingUpdates={true}
+        isDownloadingUpdate={true}
+        updateDownloadProgress={{
+          phase: 'downloading',
+          bytesReceived: 50,
+          totalBytes: 100,
+          percent: 50
+        }}
+        updateError="Network unavailable"
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Checking...' })).toBeDisabled()
+    expect(screen.getByText('Downloading update... 50%')).toBeTruthy()
+    expect(screen.getByText('Update failed: Network unavailable')).toBeTruthy()
   })
 })

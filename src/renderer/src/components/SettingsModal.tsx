@@ -122,6 +122,9 @@ export const SettingsModal = ({
   }
 
   const latestUpdate = updateStatus?.latest ?? null
+  const isLatestDismissed =
+    Boolean(latestUpdate) &&
+    updateStatus?.dismissedVersion === latestUpdate?.version
   const downloadProgressText = formatDownloadProgress(updateDownloadProgress)
 
   const submit = async (): Promise<void> => {
@@ -208,13 +211,15 @@ export const SettingsModal = ({
               >
                 {isDownloadingUpdate ? 'Downloading...' : 'Download update'}
               </button>
-              <button
-                type="button"
-                onClick={() => void onDismissUpdate()}
-                disabled={isDownloadingUpdate}
-              >
-                Dismiss this version
-              </button>
+              {!isLatestDismissed && (
+                <button
+                  type="button"
+                  onClick={() => void onDismissUpdate()}
+                  disabled={isDownloadingUpdate}
+                >
+                  Dismiss this version
+                </button>
+              )}
             </div>
           )}
         </section>
