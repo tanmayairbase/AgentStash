@@ -21,9 +21,9 @@
 </p>
 
 <p align="center">
-  <img width="1398" height="901" alt="AgentStash screenshot" src="https://github.com/user-attachments/assets/274fa0f2-f7e5-48ab-b15c-183f029b8f09" />
+  <img width="1398" height="901" alt="AgentStash screenshot" src="docs/screenshots/overview.png" />
 ...
-  <img width="1727" height="513" alt="AgentStash" src="https://github.com/user-attachments/assets/0ca69550-510c-4fa2-b5ea-1d88bf80d4a4" />
+  <img width="1727" height="513" alt="AgentStash" src="docs/screenshots/cost-breakdown.png" />
 
 </p>
 
