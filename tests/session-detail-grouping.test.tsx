@@ -240,6 +240,64 @@ describe('SessionDetailView grouping', () => {
     expect(container.textContent).toContain('create subtasks')
   })
 
+  it('renders GFM tables with inline HTML without breaking structure', () => {
+    const tableDetail: SessionDetail = {
+      ...detail,
+      messages: [
+        {
+          id: 'm-table',
+          sessionId: 's1',
+          role: 'assistant',
+          content:
+            '| Metric | BEFORE | AFTER | Δ |\n' +
+            '| --- | --- | --- | --- |\n' +
+            '| Execution time | 6.536 ms | 0.892 ms | ~7.3× faster |\n' +
+            '| Top-level Buffers<br/>\n`read` (disk) | 30 | 2 | 15× fewer disk reads |\n' +
+            '| TRE access path | `BitmapAnd(...)` → Bitmap Heap Scan | **single**<br/>\nIndex Scan using ... | plan simplified |',
+          format: 'markdown',
+          timestamp: '2026-03-11T10:04:00.000Z'
+        }
+      ]
+    }
+
+    const { container } = render(<SessionDetailView detail={tableDetail} />)
+    const rows = container.querySelectorAll('.message-content table tbody tr')
+
+    expect(rows).toHaveLength(3)
+    expect(container.textContent).toContain('read')
+    expect(container.textContent).toContain('15× fewer disk reads')
+    expect(container.textContent).toContain('plan simplified')
+  })
+
+  it('does not alter markdown inside fenced code blocks', () => {
+    const codeBlockDetail: SessionDetail = {
+      ...detail,
+      messages: [
+        {
+          id: 'm-codeblock',
+          sessionId: 's1',
+          role: 'assistant',
+          content:
+            'Example markdown:\n\n' +
+            '```md\n' +
+            '| a | b<br/>\n| c | d |\n' +
+            '```\n\n' +
+            'Text after.',
+          format: 'markdown',
+          timestamp: '2026-03-11T10:04:00.000Z'
+        }
+      ]
+    }
+
+    const { container } = render(<SessionDetailView detail={codeBlockDetail} />)
+    const code = container.querySelector('.message-content pre code')
+
+    expect(code).toBeTruthy()
+    expect(code?.textContent).toContain('| a | b')
+    expect(code?.textContent).toContain('| c | d |')
+    expect(container.querySelectorAll('.message-content table')).toHaveLength(0)
+  })
+
   it('shows a single contextual floating scroll pill for long threads', async () => {
     const { container } = render(<SessionDetailView detail={detail} />)
     const thread = container.querySelector('.message-thread') as HTMLDivElement
