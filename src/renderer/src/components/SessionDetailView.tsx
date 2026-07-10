@@ -76,6 +76,20 @@ const markdownRenderer = new Marked({ breaks: true }).use({
       return `<div class="${MERMAID_DIAGRAM_CLASS}" data-mermaid-source="${encodeURIComponent(
         text
       )}"></div>`
+    },
+    table(token) {
+      const headerCells = token.header
+        .map(cell => `<th>${this.parser.parseInline(cell.tokens)}</th>`)
+        .join('')
+      const bodyRows = token.rows
+        .map(
+          row =>
+            `<tr>${row
+              .map(cell => `<td>${this.parser.parseInline(cell.tokens)}</td>`)
+              .join('')}</tr>`
+        )
+        .join('')
+      return `<div class="table-scroll-wrap"><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>`
     }
   }
 })
@@ -88,19 +102,34 @@ type ContentPart =
 // inline HTML like <br/> at the end of a line, the following line is
 // incorrectly parsed as a new row, breaking the table. Merge those
 // continuation lines back into the row before passing to marked.
-const mergeTableBreakLines = (content: string): string => {
+//
+// The merge skips fenced code blocks so that markdown examples inside
+// ``` fences are never altered.
+const mergeTableBreakLines = (content: string): string =>
+  content
+    .split(/(^```[\s\S]*?^```[ \t]*$)/m)
+    .map((segment, i) =>
+      i % 2 === 1
+        ? segment
+        : segment.replace(/^(\|.*<br\s*\/?>)[ \t]*\r?\n/gim, '$1')
+    )
+    .join('')
+
+// After a single regex pass, a merged line may itself end with <br/> and
+// need to absorb the next line. Repeat until no more changes.
+const mergeTableBreakLinesFixedPoint = (content: string): string => {
   let result = content
   let prev: string
   do {
     prev = result
-    result = result.replace(/^(\|.*<br\s*\/?>)\n/gm, '$1')
+    result = mergeTableBreakLines(result)
   } while (result !== prev)
   return result
 }
 
 const renderMarkdownContent = (content: string): string =>
   normalizeRenderedLinks(
-    markdownRenderer.parse(mergeTableBreakLines(content)) as string
+    markdownRenderer.parse(mergeTableBreakLinesFixedPoint(content)) as string
   )
 
 // Split rendered markdown into an ordered list of HTML chunks and mermaid

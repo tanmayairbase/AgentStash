@@ -269,6 +269,35 @@ describe('SessionDetailView grouping', () => {
     expect(container.textContent).toContain('plan simplified')
   })
 
+  it('does not alter markdown inside fenced code blocks', () => {
+    const codeBlockDetail: SessionDetail = {
+      ...detail,
+      messages: [
+        {
+          id: 'm-codeblock',
+          sessionId: 's1',
+          role: 'assistant',
+          content:
+            'Example markdown:\n\n' +
+            '```md\n' +
+            '| a | b<br/>\n| c | d |\n' +
+            '```\n\n' +
+            'Text after.',
+          format: 'markdown',
+          timestamp: '2026-03-11T10:04:00.000Z'
+        }
+      ]
+    }
+
+    const { container } = render(<SessionDetailView detail={codeBlockDetail} />)
+    const code = container.querySelector('.message-content pre code')
+
+    expect(code).toBeTruthy()
+    expect(code?.textContent).toContain('| a | b')
+    expect(code?.textContent).toContain('| c | d |')
+    expect(container.querySelectorAll('.message-content table')).toHaveLength(0)
+  })
+
   it('shows a single contextual floating scroll pill for long threads', async () => {
     const { container } = render(<SessionDetailView detail={detail} />)
     const thread = container.querySelector('.message-thread') as HTMLDivElement
