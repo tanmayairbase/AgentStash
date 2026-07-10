@@ -240,6 +240,35 @@ describe('SessionDetailView grouping', () => {
     expect(container.textContent).toContain('create subtasks')
   })
 
+  it('renders GFM tables with inline HTML without breaking structure', () => {
+    const tableDetail: SessionDetail = {
+      ...detail,
+      messages: [
+        {
+          id: 'm-table',
+          sessionId: 's1',
+          role: 'assistant',
+          content:
+            '| Metric | BEFORE | AFTER | Δ |\n' +
+            '| --- | --- | --- | --- |\n' +
+            '| Execution time | 6.536 ms | 0.892 ms | ~7.3× faster |\n' +
+            '| Top-level Buffers<br/>\n`read` (disk) | 30 | 2 | 15× fewer disk reads |\n' +
+            '| TRE access path | `BitmapAnd(...)` → Bitmap Heap Scan | **single**<br/>\nIndex Scan using ... | plan simplified |',
+          format: 'markdown',
+          timestamp: '2026-03-11T10:04:00.000Z'
+        }
+      ]
+    }
+
+    const { container } = render(<SessionDetailView detail={tableDetail} />)
+    const rows = container.querySelectorAll('.message-content table tbody tr')
+
+    expect(rows).toHaveLength(3)
+    expect(container.textContent).toContain('read')
+    expect(container.textContent).toContain('15× fewer disk reads')
+    expect(container.textContent).toContain('plan simplified')
+  })
+
   it('shows a single contextual floating scroll pill for long threads', async () => {
     const { container } = render(<SessionDetailView detail={detail} />)
     const thread = container.querySelector('.message-thread') as HTMLDivElement

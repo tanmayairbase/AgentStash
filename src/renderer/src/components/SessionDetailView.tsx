@@ -84,8 +84,24 @@ type ContentPart =
   | { kind: 'html'; html: string }
   | { kind: 'mermaid'; source: string }
 
+// GFM tables treat each newline as a row boundary. When a cell contains
+// inline HTML like <br/> at the end of a line, the following line is
+// incorrectly parsed as a new row, breaking the table. Merge those
+// continuation lines back into the row before passing to marked.
+const mergeTableBreakLines = (content: string): string => {
+  let result = content
+  let prev: string
+  do {
+    prev = result
+    result = result.replace(/^(\|.*<br\s*\/?>)\n/gm, '$1')
+  } while (result !== prev)
+  return result
+}
+
 const renderMarkdownContent = (content: string): string =>
-  normalizeRenderedLinks(markdownRenderer.parse(content) as string)
+  normalizeRenderedLinks(
+    markdownRenderer.parse(mergeTableBreakLines(content)) as string
+  )
 
 // Split rendered markdown into an ordered list of HTML chunks and mermaid
 // diagrams. The HTML chunks stay a single dangerouslySetInnerHTML, while each
