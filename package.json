@@ -1,7 +1,7 @@
 {
   "name": "agentstash",
   "productName": "AgentStash",
-  "version": "12.0.0",
+  "version": "13.0.0",
   "description": "A single place to search, read and persist every AI coding session — Copilot, OpenCode, and Claude Code — kept locally forever.",
   "repository": {
     "type": "git",
