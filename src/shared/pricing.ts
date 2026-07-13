@@ -1,6 +1,12 @@
 import type { SessionTokenUsage } from './types'
 
-export type Provider = 'openai' | 'anthropic' | 'google' | 'github'
+export type Provider =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'github'
+  | 'microsoft'
+  | 'moonshot'
 
 export interface ModelRate {
   provider: Provider
@@ -13,33 +19,12 @@ export interface ModelRate {
 
 const RATES: Record<string, ModelRate> = {
   // OpenAI
-  'gpt-4.1': {
-    provider: 'openai',
-    input: 2,
-    cachedInput: 0.5,
-    cacheWrite: 0,
-    output: 8
-  },
   'gpt-5-mini': {
     provider: 'openai',
     input: 0.25,
     cachedInput: 0.025,
     cacheWrite: 0,
     output: 2
-  },
-  'gpt-5.2': {
-    provider: 'openai',
-    input: 1.75,
-    cachedInput: 0.175,
-    cacheWrite: 0,
-    output: 14
-  },
-  'gpt-5.2-codex': {
-    provider: 'openai',
-    input: 1.75,
-    cachedInput: 0.175,
-    cacheWrite: 0,
-    output: 14
   },
   'gpt-5.3-codex': {
     provider: 'openai',
@@ -75,6 +60,27 @@ const RATES: Record<string, ModelRate> = {
     cachedInput: 0.5,
     cacheWrite: 0,
     output: 30
+  },
+  'gpt-5.6-luna': {
+    provider: 'openai',
+    input: 1,
+    cachedInput: 0.1,
+    cacheWrite: 0,
+    output: 6
+  },
+  'gpt-5.6-sol': {
+    provider: 'openai',
+    input: 5,
+    cachedInput: 0.5,
+    cacheWrite: 0,
+    output: 30
+  },
+  'gpt-5.6-terra': {
+    provider: 'openai',
+    input: 2.5,
+    cachedInput: 0.25,
+    cacheWrite: 0,
+    output: 15
   },
   // Anthropic
   'claude-haiku-4.5': {
@@ -126,6 +132,28 @@ const RATES: Record<string, ModelRate> = {
     cacheWrite: 6.25,
     output: 25
   },
+  'claude-opus-4.8': {
+    provider: 'anthropic',
+    input: 5,
+    cachedInput: 0.5,
+    cacheWrite: 6.25,
+    output: 25
+  },
+  // Promotional pricing through 2026-08-31; the page lists no other rate.
+  'claude-sonnet-5': {
+    provider: 'anthropic',
+    input: 2,
+    cachedInput: 0.2,
+    cacheWrite: 2.5,
+    output: 10
+  },
+  'claude-fable-5': {
+    provider: 'anthropic',
+    input: 10,
+    cachedInput: 1,
+    cacheWrite: 12.5,
+    output: 50
+  },
   // Google
   'gemini-2.5-pro': {
     provider: 'google',
@@ -163,12 +191,21 @@ const RATES: Record<string, ModelRate> = {
     cacheWrite: 0,
     output: 2
   },
-  goldeneye: {
-    provider: 'github',
-    input: 1.25,
-    cachedInput: 0.125,
+  // Microsoft
+  'mai-code-1-flash': {
+    provider: 'microsoft',
+    input: 0.75,
+    cachedInput: 0.075,
     cacheWrite: 0,
-    output: 10
+    output: 4.5
+  },
+  // Moonshot AI
+  'kimi-k2.7-code': {
+    provider: 'moonshot',
+    input: 0.95,
+    cachedInput: 0.19,
+    cacheWrite: 0,
+    output: 4
   }
 }
 
@@ -181,7 +218,9 @@ export const providerOf = (modelId: string): Provider | null => {
   if (m.startsWith('gpt-') || /^o[13](-|$)/.test(m)) return 'openai'
   if (m.startsWith('claude-')) return 'anthropic'
   if (m.startsWith('gemini-')) return 'google'
-  if (m === 'raptor-mini' || m === 'goldeneye') return 'github'
+  if (m === 'raptor-mini') return 'github'
+  if (m.startsWith('mai-')) return 'microsoft'
+  if (m.startsWith('kimi-')) return 'moonshot'
   return null
 }
 

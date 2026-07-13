@@ -63,23 +63,26 @@ describe('priceFor', () => {
 
   it.each([
     // OpenAI — no cache write
-    ['gpt-4.1', 'openai', 2, 0.5, 0, 8],
     ['gpt-5-mini', 'openai', 0.25, 0.025, 0, 2],
-    ['gpt-5.2', 'openai', 1.75, 0.175, 0, 14],
-    ['gpt-5.2-codex', 'openai', 1.75, 0.175, 0, 14],
     ['gpt-5.3-codex', 'openai', 1.75, 0.175, 0, 14],
     ['gpt-5.4', 'openai', 2.5, 0.25, 0, 15],
     ['gpt-5.4-mini', 'openai', 0.75, 0.075, 0, 4.5],
     ['gpt-5.4-nano', 'openai', 0.2, 0.02, 0, 1.25],
     ['gpt-5.5', 'openai', 5, 0.5, 0, 30],
+    ['gpt-5.6-luna', 'openai', 1, 0.1, 0, 6],
+    ['gpt-5.6-sol', 'openai', 5, 0.5, 0, 30],
+    ['gpt-5.6-terra', 'openai', 2.5, 0.25, 0, 15],
     // Anthropic — has cache write
     ['claude-haiku-4.5', 'anthropic', 1, 0.1, 1.25, 5],
     ['claude-sonnet-4', 'anthropic', 3, 0.3, 3.75, 15],
     ['claude-sonnet-4.5', 'anthropic', 3, 0.3, 3.75, 15],
     ['claude-sonnet-4.6', 'anthropic', 3, 0.3, 3.75, 15],
+    ['claude-sonnet-5', 'anthropic', 2, 0.2, 2.5, 10],
     ['claude-opus-4.5', 'anthropic', 5, 0.5, 6.25, 25],
     ['claude-opus-4.6', 'anthropic', 5, 0.5, 6.25, 25],
     ['claude-opus-4.7', 'anthropic', 5, 0.5, 6.25, 25],
+    ['claude-opus-4.8', 'anthropic', 5, 0.5, 6.25, 25],
+    ['claude-fable-5', 'anthropic', 10, 1, 12.5, 50],
     // Google — no cache write
     ['gemini-2.5-pro', 'google', 1.25, 0.125, 0, 10],
     ['gemini-3-flash', 'google', 0.5, 0.05, 0, 3],
@@ -87,7 +90,10 @@ describe('priceFor', () => {
     ['gemini-3.5-flash', 'google', 1.5, 0.15, 0, 9],
     // GitHub fine-tuned
     ['raptor-mini', 'github', 0.25, 0.025, 0, 2],
-    ['goldeneye', 'github', 1.25, 0.125, 0, 10]
+    // Microsoft
+    ['mai-code-1-flash', 'microsoft', 0.75, 0.075, 0, 4.5],
+    // Moonshot AI
+    ['kimi-k2.7-code', 'moonshot', 0.95, 0.19, 0, 4]
   ])(
     '%s → %s rate (in=%s, cached=%s, cacheWrite=%s, out=%s)',
     (modelId, provider, input, cachedInput, cacheWrite, output) => {
@@ -142,16 +148,18 @@ describe('priceForClaudeCodeModel', () => {
 describe('providerOf', () => {
   it.each([
     ['gpt-5.4', 'openai'],
-    ['gpt-4.1', 'openai'],
+    ['gpt-5.6-luna', 'openai'],
     ['o1-preview', 'openai'],
     ['o3-mini', 'openai'],
-    ['claude-opus-4.7', 'anthropic'],
-    ['claude-sonnet-4.6', 'anthropic'],
+    ['claude-opus-4.8', 'anthropic'],
+    ['claude-sonnet-5', 'anthropic'],
+    ['claude-fable-5', 'anthropic'],
     ['gemini-3.1-pro-preview', 'google'],
     ['gemini-2.5-pro', 'google'],
     ['gemini-3.5-flash', 'google'],
     ['raptor-mini', 'github'],
-    ['goldeneye', 'github']
+    ['mai-code-1-flash', 'microsoft'],
+    ['kimi-k2.7-code', 'moonshot']
   ])('classifies %s as %s', (modelId, provider) => {
     expect(providerOf(modelId)).toBe(provider)
   })
