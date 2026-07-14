@@ -124,4 +124,43 @@ describe('TokenUsageTooltipContent', () => {
     expect(screen.getByText(/not reported/i)).not.toBeNull()
     expect(screen.queryByTestId('tooltip-est-cost')).toBeNull()
   })
+
+  it('prices Claude Code sessions with Anthropic list rates, not Copilot rates', () => {
+    render(
+      <TokenUsageTooltipContent
+        usage={{
+          source: 'claude-messages',
+          byModel: [
+            model({
+              modelId: 'claude-opus-4-8',
+              inputTokens: 1_000_000,
+              outputTokens: 1_000_000
+            })
+          ],
+          totals: {
+            inputTokens: 1_000_000,
+            cachedInputTokens: 0,
+            cacheWriteTokens: 0,
+            cacheWrite1hTokens: 0,
+            outputTokens: 1_000_000,
+            reasoningTokens: 0
+          }
+        }}
+      />
+    )
+    // claude-opus-4-8 Anthropic list: input $5 + output $25 = $30.00
+    // (the Copilot rate table keys on dots, so it would have priced this at $0.)
+    expect(screen.getByTestId('tooltip-est-cost').textContent).toMatch(/\$30\.00/)
+    expect(screen.getByText(/Anthropic list pricing/i)).not.toBeNull()
+    expect(screen.queryByText(/Copilot/i)).toBeNull()
+  })
+
+  it('keeps the Copilot footnote for non-Claude-Code sessions', () => {
+    render(
+      <TokenUsageTooltipContent
+        usage={usage([model({ modelId: 'gpt-5.4', inputTokens: 1000 })])}
+      />
+    )
+    expect(screen.getByText(/Copilot model pricing/i)).not.toBeNull()
+  })
 })
