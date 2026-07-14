@@ -1,4 +1,4 @@
-import { computeCost } from './pricing'
+import { costFnForSource } from './pricing'
 import type { SessionSummary } from './types'
 
 export interface ModelCostStat {
@@ -34,9 +34,11 @@ export const aggregateSessionCostStats = (
       continue
     }
 
+    const computeModelCost = costFnForSource(usage.source)
+
     let sessionHasPricedModel = false
     for (const model of usage.byModel) {
-      const cost = computeCost(model)
+      const cost = computeModelCost(model)
       if (cost === null) {
         continue
       }

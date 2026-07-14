@@ -4,7 +4,8 @@ import type { SessionSummary } from '../src/shared/types'
 
 const session = (
   id: string,
-  byModel: NonNullable<SessionSummary['tokenUsage']>['byModel']
+  byModel: NonNullable<SessionSummary['tokenUsage']>['byModel'],
+  source: NonNullable<SessionSummary['tokenUsage']>['source'] = 'cli-shutdown'
 ): SessionSummary => ({
   id,
   source: 'cli',
@@ -18,7 +19,7 @@ const session = (
   openVscodeTarget: `/repos/a/${id}.json`,
   openCliCwd: '/repos/a',
   tokenUsage: {
-    source: 'cli-shutdown',
+    source,
     byModel,
     totals: byModel.reduce(
       (totals, model) => ({
@@ -129,6 +130,41 @@ describe('aggregateSessionCostStats', () => {
         modelId: 'gpt-5.4-mini',
         totalCostUsd: 0.375 + 0.525,
         sessionCount: 2
+      }
+    ])
+  })
+
+  it('prices claude-messages sessions with Anthropic list rates', () => {
+    const stats = aggregateSessionCostStats([
+      session(
+        'cc',
+        [
+          {
+            // Copilot rates key on dots (claude-opus-4.8); the dashed id only
+            // resolves against the Claude Code table, so a source-blind
+            // aggregate would leave this session unpriced.
+            modelId: 'claude-opus-4-8',
+            inputTokens: 1_000_000,
+            cachedInputTokens: 0,
+            cacheWriteTokens: 0,
+            cacheWrite1hTokens: 0,
+            outputTokens: 1_000_000,
+            reasoningTokens: 0
+          }
+        ],
+        'claude-messages'
+      )
+    ])
+
+    expect(stats.pricedSessionCount).toBe(1)
+    expect(stats.unpricedSessionCount).toBe(0)
+    // Anthropic list: input $5 + output $25 = $30.00
+    expect(stats.totalCostUsd).toBeCloseTo(30, 6)
+    expect(stats.models).toEqual([
+      {
+        modelId: 'claude-opus-4-8',
+        totalCostUsd: 30,
+        sessionCount: 1
       }
     ])
   })

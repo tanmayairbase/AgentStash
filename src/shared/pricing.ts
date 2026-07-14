@@ -1,4 +1,4 @@
-import type { SessionTokenUsage } from './types'
+import type { SessionTokenUsage, TokenUsageSource } from './types'
 
 export type Provider =
   | 'openai'
@@ -273,6 +273,24 @@ const CLAUDE_CODE_RATES: Record<string, ModelRate> = {
     cacheWrite1h: 10,
     output: 25
   },
+  'claude-opus-4-5': {
+    provider: 'anthropic',
+    input: 5,
+    cachedInput: 0.5,
+    cacheWrite: 6.25,
+    cacheWrite1h: 10,
+    output: 25
+  },
+  // Sonnet 5 introductory pricing is in effect through 2026-08-31; standard
+  // rates ($3 / $0.30 / $3.75 / $6 / $15) take over on 2026-09-01.
+  'claude-sonnet-5': {
+    provider: 'anthropic',
+    input: 2,
+    cachedInput: 0.2,
+    cacheWrite: 2.5,
+    cacheWrite1h: 4,
+    output: 10
+  },
   'claude-sonnet-4-6': {
     provider: 'anthropic',
     input: 3,
@@ -353,6 +371,15 @@ export const computeClaudeCodeCost = (counts: ModelTokenCounts): number | null =
   )
 }
 
+// Claude Code sessions (source 'claude-messages') are priced from Anthropic's
+// published list rates; every other source is served through Copilot and uses
+// the Copilot rate table. Keep this the single place that maps source → rates
+// so the tooltip, session stats, and session estimate can't drift apart.
+export const costFnForSource = (
+  source: TokenUsageSource
+): ((counts: ModelTokenCounts) => number | null) =>
+  source === 'claude-messages' ? computeClaudeCodeCost : computeCost
+
 export type CostTier = '$' | '$$' | '$$$'
 export type SessionCostCategory = CostTier | 'unavailable'
 
@@ -372,8 +399,7 @@ export const sessionEstimatedCost = (
     return null
   }
 
-  const computeModelCost =
-    usage.source === 'claude-messages' ? computeClaudeCodeCost : computeCost
+  const computeModelCost = costFnForSource(usage.source)
 
   let total = 0
   let priced = false

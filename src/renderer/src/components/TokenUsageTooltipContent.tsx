@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import {
-  computeCost,
+  costFnForSource,
   providerOf,
   type Provider
 } from '../../../shared/pricing'
@@ -89,9 +89,12 @@ export function TokenUsageTooltipContent({
     )
   }
 
+  const isClaudeCode = usage.source === 'claude-messages'
+  const computeModelCost = costFnForSource(usage.source)
+
   const modelBlocks = usage.byModel.map(m => {
     const provider = providerOf(m.modelId)
-    const cost = computeCost(m)
+    const cost = computeModelCost(m)
     return { model: m, provider, cost, lines: buildLines(m, provider) }
   })
   const pricedCosts = modelBlocks
@@ -134,7 +137,9 @@ export function TokenUsageTooltipContent({
             {fmtUsd(totalCostUsd)}
           </span>
           <small className="token-tooltip__footnote">
-            Based on public Copilot model pricing; final billing may differ.
+            {isClaudeCode
+              ? 'Based on Anthropic list pricing; final billing may differ.'
+              : 'Based on public Copilot model pricing; final billing may differ.'}
           </small>
         </footer>
       ) : null}
