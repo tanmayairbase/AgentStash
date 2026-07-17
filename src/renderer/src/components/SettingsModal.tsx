@@ -141,10 +141,12 @@ export const SettingsModal = ({
     updateStatus?.dismissedVersion === latestUpdate?.version
   const downloadProgressText = formatDownloadProgress(updateDownloadProgress)
   const downloadedAssetSize = formatAssetSize(latestUpdate?.assetSize)
-  const isDownloadReady =
-    updateDownloadProgress?.phase === 'complete' && !isDownloadingUpdate
   const downloadedFileName =
     updateDownloadProgress?.filePath?.split('/').pop() ?? null
+  const isDownloadReady =
+    updateDownloadProgress?.phase === 'complete' &&
+    !isDownloadingUpdate &&
+    Boolean(latestUpdate && downloadedFileName?.includes(latestUpdate.version))
 
   const submit = async (): Promise<void> => {
     setIsSaving(true)

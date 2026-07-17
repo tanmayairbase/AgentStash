@@ -290,6 +290,7 @@ export const App = () => {
       setUpdateStatus(status)
     } catch (error) {
       setUpdateError((error as Error).message)
+      setUpdateDownloadProgress(null)
       try {
         setUpdateStatus(await ensureApi().getUpdateStatus())
       } catch (statusError) {

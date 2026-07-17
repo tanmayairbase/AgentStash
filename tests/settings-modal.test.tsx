@@ -314,6 +314,34 @@ describe('SettingsModal', () => {
     expect(onQuitApp).toHaveBeenCalledTimes(1)
   })
 
+  it('ignores a completed download for a superseded version', () => {
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        {...updateProps}
+        updateStatus={availableUpdateStatus}
+        updateDownloadProgress={{
+          phase: 'complete',
+          bytesReceived: 50 * 1024 * 1024,
+          totalBytes: 50 * 1024 * 1024,
+          percent: 100,
+          filePath: '/Users/me/Downloads/AgentStash-11.5.0-arm64.dmg'
+        }}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(
+      screen.queryByText('Update downloaded and opened in Finder')
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Download update (50.0 MB)' })
+    ).toBeTruthy()
+  })
+
   it('hides dismiss after the latest version has been dismissed', () => {
     render(
       <SettingsModal
