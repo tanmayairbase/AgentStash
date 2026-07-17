@@ -199,4 +199,5 @@ export interface RendererApi {
   onUpdateDownloadProgress: (
     listener: (progress: UpdateDownloadProgress) => void
   ) => () => void
+  quitApp: () => Promise<void>
 }

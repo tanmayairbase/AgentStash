@@ -1429,6 +1429,26 @@ button:hover {
   gap: 8px;
 }
 
+.settings-updates-ready {
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.settings-updates-ready-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.settings-updates-ready code {
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
 .settings-auto-discovery ul {
   margin: 0;
   padding-left: 18px;

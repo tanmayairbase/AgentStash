@@ -39,7 +39,7 @@ const availableUpdateStatus: AppUpdateStatus = {
     assetName: 'AgentStash-12.0.0-arm64.dmg',
     assetUrl:
       'https://github.com/tanmayairbase/AgentStash/releases/download/12.0.0/AgentStash-12.0.0-arm64.dmg',
-    assetSize: 123,
+    assetSize: 50 * 1024 * 1024,
     assetDigest: 'abc123'
   },
   lastCheckedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
@@ -56,7 +56,8 @@ const updateProps = {
   updateError: null,
   onCheckUpdates: vi.fn(async () => undefined),
   onDownloadUpdate: vi.fn(async () => undefined),
-  onDismissUpdate: vi.fn(async () => undefined)
+  onDismissUpdate: vi.fn(async () => undefined),
+  onQuitApp: vi.fn(async () => undefined)
 }
 
 describe('SettingsModal', () => {
@@ -235,11 +236,21 @@ describe('SettingsModal', () => {
       />
     )
 
-    expect(screen.getByText('Version 12.0.0 is available.')).toBeTruthy()
+    expect(screen.getByText(/Version 12.0.0 is available./)).toBeTruthy()
     expect(screen.getByText(/Last checked: 2h ago/)).toBeTruthy()
 
+    const releaseNotesLink = screen.getByRole('link', {
+      name: 'Release notes'
+    }) as HTMLAnchorElement
+    expect(releaseNotesLink.href).toBe(
+      'https://github.com/tanmayairbase/AgentStash/releases/tag/12.0.0'
+    )
+    expect(releaseNotesLink.target).toBe('_blank')
+
     fireEvent.click(screen.getByRole('button', { name: 'Check for updates' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Download update' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Download update (50.0 MB)' })
+    )
     fireEvent.click(
       screen.getByRole('button', { name: 'Dismiss this version' })
     )
@@ -247,6 +258,88 @@ describe('SettingsModal', () => {
     expect(onCheckUpdates).toHaveBeenCalledTimes(1)
     expect(onDownloadUpdate).toHaveBeenCalledTimes(1)
     expect(onDismissUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports when updates have never been checked', () => {
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        {...updateProps}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(screen.getByText('Updates have not been checked yet.')).toBeTruthy()
+    expect(screen.queryByText('AgentStash is up to date.')).toBeNull()
+  })
+
+  it('shows the install hand-off with a quit button after the download completes', () => {
+    const onQuitApp = vi.fn(async () => undefined)
+
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        {...updateProps}
+        updateStatus={availableUpdateStatus}
+        updateDownloadProgress={{
+          phase: 'complete',
+          bytesReceived: 50 * 1024 * 1024,
+          totalBytes: 50 * 1024 * 1024,
+          percent: 100,
+          filePath: '/Users/me/Downloads/AgentStash-12.0.0-arm64.dmg'
+        }}
+        onQuitApp={onQuitApp}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(
+      screen.getByText('Update downloaded and opened in Finder')
+    ).toBeTruthy()
+    expect(screen.getByText('AgentStash-12.0.0-arm64.dmg')).toBeTruthy()
+    expect(
+      screen.queryByRole('button', { name: /Download update/ })
+    ).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Dismiss this version' })
+    ).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quit AgentStash' }))
+    expect(onQuitApp).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a completed download for a superseded version', () => {
+    render(
+      <SettingsModal
+        isOpen={true}
+        config={baseConfig}
+        autoDiscoveredPatterns={[]}
+        {...updateProps}
+        updateStatus={availableUpdateStatus}
+        updateDownloadProgress={{
+          phase: 'complete',
+          bytesReceived: 50 * 1024 * 1024,
+          totalBytes: 50 * 1024 * 1024,
+          percent: 100,
+          filePath: '/Users/me/Downloads/AgentStash-11.5.0-arm64.dmg'
+        }}
+        onClose={vi.fn()}
+        onSave={vi.fn(async () => undefined)}
+      />
+    )
+
+    expect(
+      screen.queryByText('Update downloaded and opened in Finder')
+    ).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Download update (50.0 MB)' })
+    ).toBeTruthy()
   })
 
   it('hides dismiss after the latest version has been dismissed', () => {
@@ -266,7 +359,9 @@ describe('SettingsModal', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: 'Download update' })).toBeTruthy()
+    expect(
+      screen.getByRole('button', { name: 'Download update (50.0 MB)' })
+    ).toBeTruthy()
     expect(
       screen.queryByRole('button', { name: 'Dismiss this version' })
     ).toBeNull()

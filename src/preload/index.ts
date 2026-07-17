@@ -64,6 +64,7 @@ const api: RendererApi = {
   downloadLatestUpdate: async () =>
     ipcRenderer.invoke('updates:download-latest'),
   dismissLatestUpdate: async () => ipcRenderer.invoke('updates:dismiss-latest'),
+  quitApp: async () => ipcRenderer.invoke('app:quit'),
   onUpdateDownloadProgress: listener => {
     const handler = (_event: Electron.IpcRendererEvent, progress: unknown) => {
       listener(progress as Parameters<typeof listener>[0])
