@@ -1,4 +1,4 @@
-import { shell, ipcMain } from 'electron'
+import { app, shell, ipcMain } from 'electron'
 import type { AppConfig } from '../shared/types'
 import { ConfigService } from './config'
 import { logError, logInfo, logWarn } from './logger'
@@ -103,6 +103,11 @@ export const registerIpcHandlers = (
       })
       throw error
     }
+  })
+
+  ipcMain.handle('app:quit', () => {
+    logInfo('IPC app:quit')
+    app.quit()
   })
 
   ipcMain.handle('sessions:list', async (_event, query: string) => {

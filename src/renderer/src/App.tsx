@@ -254,6 +254,7 @@ export const App = () => {
       updateCheckInFlightRef.current = true
       if (force) {
         setIsCheckingUpdates(true)
+        setUpdateDownloadProgress(null)
       }
       if (showErrors) {
         setUpdateError(null)
@@ -287,7 +288,6 @@ export const App = () => {
     try {
       const status = await ensureApi().downloadLatestUpdate()
       setUpdateStatus(status)
-      setToast('Update DMG opened. Drag AgentStash to Applications to install.')
     } catch (error) {
       setUpdateError((error as Error).message)
       try {
@@ -305,6 +305,14 @@ export const App = () => {
   const onDismissUpdate = useCallback(async (): Promise<void> => {
     try {
       setUpdateStatus(await ensureApi().dismissLatestUpdate())
+    } catch (error) {
+      setUpdateError((error as Error).message)
+    }
+  }, [ensureApi])
+
+  const onQuitApp = useCallback(async (): Promise<void> => {
+    try {
+      await ensureApi().quitApp()
     } catch (error) {
       setUpdateError((error as Error).message)
     }
@@ -1242,6 +1250,7 @@ export const App = () => {
         onCheckUpdates={() => requestUpdateCheck(true, true)}
         onDownloadUpdate={onDownloadUpdate}
         onDismissUpdate={onDismissUpdate}
+        onQuitApp={onQuitApp}
       />
       <SessionStatsModal
         isOpen={showStats}

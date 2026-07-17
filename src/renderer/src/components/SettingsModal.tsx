@@ -23,6 +23,7 @@ interface Props {
   onCheckUpdates: () => Promise<void>
   onDownloadUpdate: () => Promise<void>
   onDismissUpdate: () => Promise<void>
+  onQuitApp: () => Promise<void>
 }
 
 const formatRelativeUpdateCheckTime = (
@@ -60,7 +61,7 @@ const formatRelativeUpdateCheckTime = (
 const formatDownloadProgress = (
   progress: UpdateDownloadProgress | null
 ): string | null => {
-  if (!progress) {
+  if (!progress || progress.phase === 'complete') {
     return null
   }
   if (progress.phase === 'verifying') {
@@ -69,12 +70,24 @@ const formatDownloadProgress = (
   if (progress.phase === 'opening') {
     return 'Opening DMG...'
   }
-  if (progress.phase === 'complete') {
-    return 'DMG opened.'
-  }
   return progress.percent === null
     ? 'Downloading update...'
     : `Downloading update... ${progress.percent}%`
+}
+
+const formatAssetSize = (bytes: number | undefined): string | null => {
+  if (!bytes || !Number.isFinite(bytes) || bytes <= 0) {
+    return null
+  }
+  const megabytes = bytes / (1024 * 1024)
+  if (megabytes >= 1) {
+    return `${megabytes >= 100 ? Math.round(megabytes) : megabytes.toFixed(1)} MB`
+  }
+  const kilobytes = bytes / 1024
+  if (kilobytes >= 1) {
+    return `${Math.round(kilobytes)} KB`
+  }
+  return `${bytes} B`
 }
 
 export const SettingsModal = ({
@@ -90,7 +103,8 @@ export const SettingsModal = ({
   onSave,
   onCheckUpdates,
   onDownloadUpdate,
-  onDismissUpdate
+  onDismissUpdate,
+  onQuitApp
 }: Props) => {
   const [repoRoots, setRepoRoots] = useState('')
   const [explicitPatterns, setExplicitPatterns] = useState('')
@@ -126,6 +140,11 @@ export const SettingsModal = ({
     Boolean(latestUpdate) &&
     updateStatus?.dismissedVersion === latestUpdate?.version
   const downloadProgressText = formatDownloadProgress(updateDownloadProgress)
+  const downloadedAssetSize = formatAssetSize(latestUpdate?.assetSize)
+  const isDownloadReady =
+    updateDownloadProgress?.phase === 'complete' && !isDownloadingUpdate
+  const downloadedFileName =
+    updateDownloadProgress?.filePath?.split('/').pop() ?? null
 
   const submit = async (): Promise<void> => {
     setIsSaving(true)
@@ -191,9 +210,20 @@ export const SettingsModal = ({
               </button>
               <div className="settings-updates-status">
                 {latestUpdate ? (
-                  <p>Version {latestUpdate.version} is available.</p>
-                ) : (
+                  <p>
+                    Version {latestUpdate.version} is available.{' '}
+                    <a
+                      href={latestUpdate.releaseUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Release notes
+                    </a>
+                  </p>
+                ) : updateStatus?.lastCheckedAt ? (
                   <p>AgentStash is up to date.</p>
+                ) : (
+                  <p>Updates have not been checked yet.</p>
                 )}
               </div>
             </div>
@@ -202,14 +232,37 @@ export const SettingsModal = ({
           {updateError && (
             <p className="modal-error">Update failed: {updateError}</p>
           )}
-          {latestUpdate && (
+          {latestUpdate && isDownloadReady && (
+            <div className="settings-updates-ready" role="status">
+              <p className="settings-updates-ready-title">
+                Update downloaded and opened in Finder
+              </p>
+              <p>
+                {downloadedFileName ? (
+                  <>
+                    Saved to Downloads as <code>{downloadedFileName}</code>.{' '}
+                  </>
+                ) : null}
+                Quit AgentStash, then drag the new app into Applications to
+                finish installing.
+              </p>
+              <button type="button" onClick={() => void onQuitApp()}>
+                Quit AgentStash
+              </button>
+            </div>
+          )}
+          {latestUpdate && !isDownloadReady && (
             <div className="settings-updates-actions">
               <button
                 type="button"
                 onClick={() => void onDownloadUpdate()}
                 disabled={isDownloadingUpdate}
               >
-                {isDownloadingUpdate ? 'Downloading...' : 'Download update'}
+                {isDownloadingUpdate
+                  ? 'Downloading...'
+                  : `Download update${
+                      downloadedAssetSize ? ` (${downloadedAssetSize})` : ''
+                    }`}
               </button>
               {!isLatestDismissed && (
                 <button

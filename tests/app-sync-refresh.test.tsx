@@ -89,12 +89,14 @@ const updateApiStubs = (): Pick<
   | 'downloadLatestUpdate'
   | 'dismissLatestUpdate'
   | 'onUpdateDownloadProgress'
+  | 'quitApp'
 > => ({
   getUpdateStatus: vi.fn(async () => updateStatus),
   checkForUpdates: vi.fn(async () => updateStatus),
   downloadLatestUpdate: vi.fn(async () => updateStatus),
   dismissLatestUpdate: vi.fn(async () => updateStatus),
-  onUpdateDownloadProgress: vi.fn(() => () => undefined)
+  onUpdateDownloadProgress: vi.fn(() => () => undefined),
+  quitApp: vi.fn(async () => undefined)
 })
 
 const buildDetail = (messageCount: number): SessionDetail => ({
