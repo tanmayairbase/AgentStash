@@ -1,12 +1,12 @@
 import { basename, extname } from 'node:path'
 import type {
-  ModelTokenUsage,
+  ClaudeUsageEvent,
   SessionExecutionMode,
   SessionMessage,
-  SessionSummary,
-  SessionTokenUsage
+  SessionSummary
 } from '../../shared/types'
 import {
+  aggregateTokenUsageByModel,
   appendExecutionMode,
   asNumber,
   asRecord,
@@ -14,9 +14,7 @@ import {
   inferFormat,
   parseJsonLines,
   stableId,
-  sumModelTotals,
   toIso,
-  ZERO_TOTALS,
   type ParseContext,
   type ParsedSession
 } from './helpers'
@@ -38,6 +36,7 @@ interface ClaudeLogLine {
   parentUuid?: string | null
   isSidechain?: boolean
   message?: {
+    id?: string
     role?: string
     content?: unknown
     model?: string
@@ -48,6 +47,8 @@ interface ClaudeLogLine {
   sessionId?: string
   permissionMode?: string
   aiTitle?: string
+  customTitle?: string
+  agentId?: string
 }
 
 const toClaudeBlocks = (content: unknown): ClaudeContentBlock[] => {
@@ -82,7 +83,9 @@ const extractClaudeTextBlocks = (content: unknown): string => {
 // worth surfacing as a badge; acceptEdits ("⏵⏵ accept edits on") and
 // bypassPermissions (--dangerously-skip-permissions) are standing permission
 // settings, and default is the baseline, so none of them get a mode.
-const mapClaudePermissionMode = (value: unknown): SessionExecutionMode | null =>
+const mapClaudePermissionMode = (
+  value: unknown
+): SessionExecutionMode | null =>
   firstString(value)?.trim() === 'plan' ? 'plan' : null
 
 const extractClaudeThinkingBlocks = (content: unknown): string =>
@@ -94,7 +97,9 @@ const extractClaudeThinkingBlocks = (content: unknown): string =>
 const extractClaudeToolResultText = (content: unknown): string | null =>
   firstString(content) ?? firstString(extractClaudeTextBlocks(content))
 
-const collectClaudeToolResults = (lines: ClaudeLogLine[]): Map<string, string> => {
+const collectClaudeToolResults = (
+  lines: ClaudeLogLine[]
+): Map<string, string> => {
   const results = new Map<string, string>()
   for (const line of lines) {
     if (line.type !== 'user') {
@@ -120,7 +125,9 @@ const collectClaudeToolResults = (lines: ClaudeLogLine[]): Map<string, string> =
 // There's no structured answer payload anywhere else in the transcript, so
 // this template is the only source — if Claude Code's wording changes, this
 // silently stops matching and callers fall back to the raw sentence below.
-const parseAskUserQuestionAnswers = (resultText: string): Map<string, string> => {
+const parseAskUserQuestionAnswers = (
+  resultText: string
+): Map<string, string> => {
   const answers = new Map<string, string>()
   const pattern = /"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)"/g
   let match: RegExpExecArray | null
@@ -192,8 +199,10 @@ const extractClaudeQuestions = (
   return questions
 }
 
-const aggregateClaudeTokenUsage = (lines: ClaudeLogLine[]): SessionTokenUsage => {
-  const perModel = new Map<string, ModelTokenUsage>()
+const collectClaudeUsageEvents = (
+  lines: ClaudeLogLine[]
+): ClaudeUsageEvent[] => {
+  const eventsById = new Map<string, ClaudeUsageEvent>()
 
   for (const line of lines) {
     if (line.type !== 'assistant') {
@@ -201,41 +210,26 @@ const aggregateClaudeTokenUsage = (lines: ClaudeLogLine[]): SessionTokenUsage =>
     }
     const usage = asRecord(line.message?.usage)
     const modelId = firstString(line.message?.model)
-    if (!usage || !modelId) {
+    const id = firstString(line.message?.id, line.uuid)
+    if (!usage || !modelId || !id) {
       continue
     }
 
     const cacheCreation = asRecord(usage.cache_creation)
-    const cacheWrite5m = asNumber(cacheCreation?.ephemeral_5m_input_tokens)
-    const cacheWrite1h = asNumber(cacheCreation?.ephemeral_1h_input_tokens)
-
-    const existing = perModel.get(modelId) ?? {
+    eventsById.set(id, {
+      id,
       modelId,
-      inputTokens: 0,
-      cachedInputTokens: 0,
-      cacheWriteTokens: 0,
-      cacheWrite1hTokens: 0,
-      outputTokens: 0,
-      reasoningTokens: 0
-    }
-    existing.inputTokens += asNumber(usage.input_tokens)
-    existing.cachedInputTokens += asNumber(usage.cache_read_input_tokens)
-    existing.cacheWriteTokens += cacheWrite5m
-    existing.cacheWrite1hTokens += cacheWrite1h
-    existing.outputTokens += asNumber(usage.output_tokens)
-    perModel.set(modelId, existing)
+      inputTokens: asNumber(usage.input_tokens),
+      cachedInputTokens: asNumber(usage.cache_read_input_tokens),
+      cacheWriteTokens: asNumber(cacheCreation?.ephemeral_5m_input_tokens),
+      cacheWrite1hTokens: asNumber(cacheCreation?.ephemeral_1h_input_tokens),
+      outputTokens: asNumber(usage.output_tokens),
+      reasoningTokens: 0,
+      timestamp: line.timestamp
+    })
   }
 
-  if (perModel.size === 0) {
-    return {
-      source: 'unavailable',
-      byModel: [],
-      totals: { ...ZERO_TOTALS }
-    }
-  }
-
-  const byModel = Array.from(perModel.values())
-  return { source: 'claude-messages', byModel, totals: sumModelTotals(byModel) }
+  return [...eventsById.values()]
 }
 
 export const parseClaudeCodeSessionLog = (
@@ -255,6 +249,7 @@ export const parseClaudeCodeSessionLog = (
     firstString(lines.find(line => line.cwd)?.cwd) ?? context.repoRoot
 
   const toolResultsByToolUseId = collectClaudeToolResults(lines)
+  const claudeUsageEvents = collectClaudeUsageEvents(lines)
   const messages: SessionMessage[] = []
   const modes: SessionExecutionMode[] = []
   let lastModel: string | null = null
@@ -263,7 +258,8 @@ export const parseClaudeCodeSessionLog = (
     if (line.type !== 'user' && line.type !== 'assistant') {
       continue
     }
-    const role: 'user' | 'assistant' = line.type === 'user' ? 'user' : 'assistant'
+    const role: 'user' | 'assistant' =
+      line.type === 'user' ? 'user' : 'assistant'
     const content = extractClaudeTextBlocks(line.message?.content)
     const thinking =
       role === 'assistant'
@@ -304,13 +300,37 @@ export const parseClaudeCodeSessionLog = (
     return []
   }
 
-  const aiTitle = firstString(lines.find(line => line.type === 'ai-title')?.aiTitle)
+  const latestCustomTitle = firstString(
+    [...lines].reverse().find(line => line.type === 'custom-title')?.customTitle
+  )
+  const aiTitle = firstString(
+    [...lines].reverse().find(line => line.type === 'ai-title')?.aiTitle
+  )
   const titleSeed =
+    latestCustomTitle ??
     aiTitle ??
     messages.find(message => message.role === 'user')?.content ??
     messages[0].content
-  const createdAt = toIso(lines[0]?.timestamp)
+  const validTimestamps = lines
+    .map(line => line.timestamp)
+    .filter((timestamp): timestamp is string => Boolean(timestamp))
+    .map(timestamp => toIso(timestamp))
+    .sort()
+  const createdAt = validTimestamps[0] ?? toIso(undefined)
   const updatedAt = toIso(messages[messages.length - 1]?.timestamp, createdAt)
+  const lineageLines = lines.filter(
+    line => line.type === 'user' || line.type === 'assistant'
+  )
+  const lineageMessageIds = [
+    ...new Set(lineageLines.map(line => line.uuid).filter(Boolean))
+  ] as string[]
+  const lineageParentMessageIds = [
+    ...new Set(lineageLines.map(line => line.parentUuid).filter(Boolean))
+  ] as string[]
+  const normalizedFilePath = context.filePath.replaceAll('\\', '/')
+  const isSubagentSession =
+    normalizedFilePath.includes('/subagents/') ||
+    lines.some(line => line.isSidechain === true || Boolean(line.agentId))
 
   const session: SessionSummary = {
     id: sessionId,
@@ -318,6 +338,7 @@ export const parseClaudeCodeSessionLog = (
     repoPath,
     title: titleSeed.slice(0, 120),
     model: lastModel,
+    isSubagentSession,
     modes: modes.length > 0 ? modes : undefined,
     latestMode: modes.at(-1) ?? null,
     createdAt,
@@ -326,7 +347,13 @@ export const parseClaudeCodeSessionLog = (
     filePath: context.filePath,
     openVscodeTarget: context.filePath,
     openCliCwd: repoPath,
-    tokenUsage: aggregateClaudeTokenUsage(lines)
+    tokenUsage: aggregateTokenUsageByModel(
+      claudeUsageEvents,
+      'claude-messages'
+    ),
+    lineageMessageIds,
+    lineageParentMessageIds,
+    claudeUsageEvents
   }
 
   return [{ session, messages }]

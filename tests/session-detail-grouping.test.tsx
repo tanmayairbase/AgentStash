@@ -1,5 +1,11 @@
 import React from 'react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SessionDetail } from '../src/shared/types'
 import { SessionDetailView } from '../src/renderer/src/components/SessionDetailView'
@@ -128,6 +134,71 @@ describe('SessionDetailView grouping', () => {
     expect(onCopySessionId).toHaveBeenCalledWith('s1')
   })
 
+  it('switches between related Claude branches from the detail header', () => {
+    const onSelectBranch = vi.fn()
+    const olderBranchPrompt =
+      'Use a simpler retry loop with bounded exponential backoff and clear cancellation semantics'
+    const branchDetail: SessionDetail = {
+      ...detail,
+      id: 'branch-new',
+      source: 'claude',
+      familyId: 'branch-old',
+      currentBranchId: 'branch-new',
+      branchCount: 2,
+      branches: [
+        {
+          id: 'branch-new',
+          title: 'Session title',
+          createdAt: '2026-03-11T10:00:00.000Z',
+          updatedAt: '2026-03-11T10:05:00.000Z',
+          messageCount: 4,
+          divergencePrompt: 'Use the state machine approach',
+          isCurrent: true
+        },
+        {
+          id: 'branch-old',
+          title: 'Session title',
+          createdAt: '2026-03-11T10:00:00.000Z',
+          updatedAt: '2026-03-11T10:03:00.000Z',
+          messageCount: 3,
+          divergencePrompt: olderBranchPrompt,
+          isCurrent: false
+        }
+      ]
+    }
+
+    const { rerender } = render(
+      <SessionDetailView
+        detail={branchDetail}
+        onSelectBranch={onSelectBranch}
+      />
+    )
+
+    fireEvent.click(
+      screen.getByLabelText('Switch conversation branch, 2 branches')
+    )
+    const olderBranchItem = screen.getByRole('menuitemradio', {
+      name: /Older.*Use a simpler retry loop/
+    })
+    expect(
+      olderBranchItem.querySelector('[role="tooltip"]')?.textContent
+    ).toContain(olderBranchPrompt)
+    fireEvent.click(olderBranchItem)
+    expect(onSelectBranch).toHaveBeenCalledWith('branch-old')
+
+    rerender(
+      <SessionDetailView
+        detail={{ ...branchDetail, id: 'branch-old' }}
+        onSelectBranch={onSelectBranch}
+      />
+    )
+    expect(
+      screen.getByLabelText(
+        'Switch conversation branch, 2 branches, viewing older branch'
+      ).classList.contains('detail-branch-trigger--older')
+    ).toBe(true)
+  })
+
   it('shows chunked transcript loading controls for large sessions', () => {
     const start = new Date('2026-03-11T00:00:00.000Z').getTime()
     const largeDetail: SessionDetail = {
@@ -165,7 +236,9 @@ describe('SessionDetailView grouping', () => {
       }))
     }
 
-    const { container, rerender } = render(<SessionDetailView detail={detail} />)
+    const { container, rerender } = render(
+      <SessionDetailView detail={detail} />
+    )
     const thread = container.querySelector('.message-thread') as HTMLDivElement
 
     thread.scrollTop = 275
@@ -310,7 +383,9 @@ describe('SessionDetailView grouping', () => {
     fireEvent.scroll(thread)
 
     expect(screen.queryByRole('button', { name: 'Back to top' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Scroll to bottom' })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Scroll to bottom' })
+    ).toBeNull()
 
     thread.scrollTop = 180
     fireEvent.scroll(thread)
@@ -338,7 +413,9 @@ describe('SessionDetailView grouping', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Back to top' })).toBeTruthy()
     })
-    expect(screen.queryByRole('button', { name: 'Scroll to bottom' })).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'Scroll to bottom' })
+    ).toBeNull()
 
     thread.scrollTop = 90
     fireEvent.scroll(thread)
@@ -490,9 +567,7 @@ describe('SessionDetailView grouping', () => {
     render(<SessionDetailView detail={questionDetail} />)
 
     const bubble = screen.getByLabelText('assistant message')
-    expect(
-      bubble.querySelector('.message-questions')
-    ).toBeTruthy()
+    expect(bubble.querySelector('.message-questions')).toBeTruthy()
     expect(
       screen.getByText('Push commit 20671ef to origin/master?')
     ).toBeTruthy()

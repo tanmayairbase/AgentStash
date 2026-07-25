@@ -120,10 +120,13 @@ export const registerIpcHandlers = (
     return storage.listStarredMessages(query ?? '')
   })
 
-  ipcMain.handle('sessions:get', async (_event, sessionId: string) => {
-    logInfo('IPC sessions:get', { sessionId })
-    return storage.getSessionDetail(sessionId)
-  })
+  ipcMain.handle(
+    'sessions:get',
+    async (_event, sessionId: string, branchId?: string) => {
+      logInfo('IPC sessions:get', { sessionId, branchId })
+      return storage.getSessionDetail(sessionId, branchId)
+    }
+  )
 
   ipcMain.handle(
     'sessions:set-archived',

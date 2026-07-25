@@ -165,6 +165,7 @@ export const App = () => {
     StarredMessageSummary[]
   >([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
   const [selectedDetail, setSelectedDetail] = useState<SessionDetail | null>(
     null
   )
@@ -211,6 +212,7 @@ export const App = () => {
   const hasInitializedSearchEffectRef = useRef(false)
   const hasLoadedAllStarsRef = useRef(false)
   const selectedIdRef = useRef<string | null>(null)
+  const selectedBranchIdRef = useRef<string | null>(null)
   const searchQueryRef = useRef('')
   const syncInFlightRef = useRef(false)
   const queuedSyncRef = useRef<PendingSyncRequest | null>(null)
@@ -324,6 +326,10 @@ export const App = () => {
   }, [selectedId])
 
   useEffect(() => {
+    selectedBranchIdRef.current = selectedBranchId
+  }, [selectedBranchId])
+
+  useEffect(() => {
     const unsubscribe = ensureApi().onUpdateDownloadProgress(progress => {
       setUpdateDownloadProgress(progress)
     })
@@ -410,9 +416,17 @@ export const App = () => {
         setAllStarredMessages(allStars)
         hasLoadedAllStarsRef.current = true
       }
-      setSelectedId(previous =>
-        rows.some(row => row.id === previous) ? previous : (rows[0]?.id ?? null)
-      )
+      const previousSelection = selectedIdRef.current
+      const nextSelection = rows.some(row => row.id === previousSelection)
+        ? previousSelection
+        : (rows[0]?.id ?? null)
+      if (nextSelection !== previousSelection) {
+        const nextSummary = rows.find(row => row.id === nextSelection)
+        setSelectedBranchId(
+          nextSummary?.currentBranchId ?? nextSummary?.id ?? null
+        )
+      }
+      setSelectedId(nextSelection)
       uiLog('Session list refreshed', {
         query,
         count: rows.length,
@@ -428,7 +442,8 @@ export const App = () => {
   const refreshSelectedDetailIfPresent = useCallback(
     async (
       sessionId: string | null,
-      selectableRows?: SessionSummary[]
+      selectableRows?: SessionSummary[],
+      branchId?: string | null
     ): Promise<void> => {
       if (!sessionId) {
         return
@@ -437,7 +452,10 @@ export const App = () => {
         return
       }
       try {
-        const detail = await ensureApi().getSessionDetail(sessionId)
+        const detail = await ensureApi().getSessionDetail(
+          sessionId,
+          branchId ?? undefined
+        )
         setSelectedDetail(detail)
       } catch (error) {
         uiLog('Failed refreshing selected session detail', {
@@ -504,18 +522,27 @@ export const App = () => {
   useEffect(() => {
     if (!selectedId) {
       setSelectedDetail(null)
+      setSelectedBranchId(null)
       return
     }
 
+    let cancelled = false
     void ensureApi()
-      .getSessionDetail(selectedId)
+      .getSessionDetail(selectedId, selectedBranchId ?? undefined)
       .then(detail => {
-        setSelectedDetail(detail)
+        if (!cancelled) {
+          setSelectedDetail(detail)
+        }
       })
       .catch(error => {
-        setToast(`Failed loading session: ${(error as Error).message}`)
+        if (!cancelled) {
+          setToast(`Failed loading session: ${(error as Error).message}`)
+        }
       })
-  }, [ensureApi, selectedId])
+    return () => {
+      cancelled = true
+    }
+  }, [ensureApi, selectedBranchId, selectedId])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -588,15 +615,13 @@ export const App = () => {
   }, [originOptions])
 
   useEffect(() => {
+    window.localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth))
+  }, [sidebarWidth])
+
+  useEffect(() => {
     const onResize = (): void => {
       const bounds = getSidebarBounds(window.innerWidth)
-      setSidebarWidth(current => {
-        const next = clamp(current, bounds.min, bounds.max)
-        if (next !== current) {
-          window.localStorage.setItem(SIDEBAR_WIDTH_KEY, String(next))
-        }
-        return next
-      })
+      setSidebarWidth(current => clamp(current, bounds.min, bounds.max))
     }
 
     window.addEventListener('resize', onResize)
@@ -696,12 +721,23 @@ export const App = () => {
     for (const starred of starredMessages) {
       additionalSelectableIds.add(starred.sessionId)
     }
-    setSelectedId(previous =>
-      filteredSessions.some(session => session.id === previous) ||
-      (previous ? additionalSelectableIds.has(previous) : false)
-        ? previous
+    const previousSelection = selectedIdRef.current
+    const nextSelection =
+      filteredSessions.some(session => session.id === previousSelection) ||
+      (previousSelection
+        ? additionalSelectableIds.has(previousSelection)
+        : false)
+        ? previousSelection
         : (filteredSessions[0]?.id ?? null)
-    )
+    if (nextSelection !== previousSelection) {
+      const nextSummary =
+        filteredSessions.find(session => session.id === nextSelection) ??
+        archivedSearchMatches.find(session => session.id === nextSelection)
+      setSelectedBranchId(
+        nextSummary?.currentBranchId ?? nextSummary?.id ?? null
+      )
+    }
+    setSelectedId(nextSelection)
   }, [
     archivedFilter,
     archivedSearchMatches,
@@ -789,7 +825,10 @@ export const App = () => {
         }
         await api.setMessageStarred(sessionId, messageId, starred)
         const [detail] = await Promise.all([
-          api.getSessionDetail(sessionId),
+          api.getSessionDetail(
+            selectedIdRef.current ?? sessionId,
+            selectedBranchIdRef.current ?? sessionId
+          ),
           refreshList(searchQuery, { refreshAllStars: true })
         ])
         setSelectedDetail(detail)
@@ -802,8 +841,9 @@ export const App = () => {
   )
 
   const onSelectStarredMessage = useCallback(
-    (sessionId: string, messageId: string): void => {
+    (sessionId: string, messageId: string, branchId?: string): void => {
       setSelectedId(sessionId)
+      setSelectedBranchId(branchId ?? sessionId)
       setFocusMessageId(messageId)
     },
     []
@@ -829,7 +869,11 @@ export const App = () => {
         const rows = await refreshList(searchQueryRef.current, {
           refreshAllStars: true
         })
-        await refreshSelectedDetailIfPresent(selectedIdRef.current, rows)
+        await refreshSelectedDetailIfPresent(
+          selectedIdRef.current,
+          rows,
+          selectedBranchIdRef.current
+        )
 
         if (source === 'manual') {
           setToast(
@@ -1078,7 +1122,6 @@ export const App = () => {
         bounds.max
       )
       setSidebarWidth(next)
-      window.localStorage.setItem(SIDEBAR_WIDTH_KEY, String(next))
     }
 
     const onUp = (): void => {
@@ -1170,7 +1213,10 @@ export const App = () => {
             starredMessages={starredMessages}
             archivedSearchMatches={archivedSearchMatches}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={(sessionId, branchId) => {
+              setSelectedId(sessionId)
+              setSelectedBranchId(branchId ?? sessionId)
+            }}
             onSelectStarredMessage={onSelectStarredMessage}
             onSetArchived={(sessionId, archived) =>
               void onSetArchived(sessionId, archived)
@@ -1217,6 +1263,7 @@ export const App = () => {
           onToggleMessageStar={(sessionId, messageId, starred) =>
             void onToggleMessageStar(sessionId, messageId, starred)
           }
+          onSelectBranch={setSelectedBranchId}
           focusMessageId={focusMessageId}
           onFocusedMessageConsumed={() => setFocusMessageId(null)}
         />

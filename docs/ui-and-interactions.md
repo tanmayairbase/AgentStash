@@ -51,6 +51,8 @@ Current behavior:
 - separate archived-match handling during search
 - local archive/unarchive actions
 - session rows show an estimated cost chip (`$`, `$$`, `$$$`) when a session total can be priced
+- related Claude rewind/fork files appear as one row with a branch count
+- searches include every Claude branch and identify matches in older branches
 - virtualized rows once the list is large enough
 
 Important list constants:
@@ -71,6 +73,10 @@ Current behavior:
 - markdown and ANSI rendering
 - artifact chips for references and edits
 - token-usage visualization and estimated-cost detail when token pricing data is available
+- a compact Claude branch-count action beside Copy Session ID, opening a menu
+  labeled by divergence time and first branch-unique prompt
+- the newest Claude branch by default, with search navigation opening the matching branch
+- selected-branch usage plus a deduplicated conversation total in the usage tooltip
 - message starring
 - grouped same-role messages within the same IST minute
 - chunked transcript rendering with `Load older messages`
@@ -85,6 +91,7 @@ Current intended behavior:
 
 - selecting a different session resets the transcript to the **top**
 - deep links, such as starred-message jumps, can scroll a target message into view
+- switching Claude branches resets the transcript to the top
 
 This is intentionally optimized for review rather than “resume where I left off”.
 
@@ -153,13 +160,13 @@ Those actions reopen context in source tools; they do not embed those tools insi
 
 ## Where to make UI changes
 
-| Change | Primary file(s) |
-| --- | --- |
-| shell state / screen flow | `src/renderer/src/App.tsx` |
-| sidebar rows, filters, virtualization | `src/renderer/src/components/SessionListSidebar.tsx` |
-| transcript rendering, grouping, scroll behavior | `src/renderer/src/components/SessionDetailView.tsx` |
-| settings form | `src/renderer/src/components/SettingsModal.tsx` |
-| styling and spacing | `src/renderer/src/styles.css` |
+| Change                                          | Primary file(s)                                      |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| shell state / screen flow                       | `src/renderer/src/App.tsx`                           |
+| sidebar rows, filters, virtualization           | `src/renderer/src/components/SessionListSidebar.tsx` |
+| transcript rendering, grouping, scroll behavior | `src/renderer/src/components/SessionDetailView.tsx`  |
+| settings form                                   | `src/renderer/src/components/SettingsModal.tsx`      |
+| styling and spacing                             | `src/renderer/src/styles.css`                        |
 
 ## UX constraints worth preserving
 

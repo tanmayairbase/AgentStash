@@ -145,7 +145,7 @@ describe('SessionListSidebar', () => {
     } = renderSidebar()
 
     fireEvent.click(screen.getByText('Implement auth parser'))
-    expect(onSelect).toHaveBeenCalledWith('1')
+    expect(onSelect).toHaveBeenCalledWith('1', '1')
 
     fireEvent.change(screen.getByLabelText('Search sessions'), {
       target: { value: 'auth' }
@@ -211,6 +211,22 @@ describe('SessionListSidebar', () => {
     expect(screen.getByText('Archived')).toBeTruthy()
   })
 
+  it('shows when a search match belongs to an older branch', () => {
+    renderSidebar({
+      sessions: [
+        {
+          ...sessions[0],
+          branchCount: 2,
+          currentBranchId: 'branch-new',
+          searchMatchBranchId: 'branch-old'
+        }
+      ],
+      query: 'older prompt'
+    })
+    expect(screen.getByLabelText('2 branches')).toBeTruthy()
+    expect(screen.getByText('Match in older branch')).toBeTruthy()
+  })
+
   it('does not show mode badges in session rows', () => {
     renderSidebar()
     expect(screen.queryByText('Plan')).toBeNull()
@@ -252,7 +268,7 @@ describe('SessionListSidebar', () => {
     expect(screen.getByText('Starred (1)')).toBeTruthy()
     fireEvent.click(screen.getByText('Starred (1)'))
     fireEvent.click(screen.getByText('Use session-store summary for title'))
-    expect(onSelectStarredMessage).toHaveBeenCalledWith('1', 'm1')
+    expect(onSelectStarredMessage).toHaveBeenCalledWith('1', 'm1', undefined)
   })
 
   it('supports starred filter control', () => {
@@ -285,7 +301,7 @@ describe('SessionListSidebar', () => {
     expect(screen.queryByText('Session 180')).toBeNull()
 
     fireEvent.click(screen.getByText('Session 1'))
-    expect(onSelect).toHaveBeenCalledWith('1')
+    expect(onSelect).toHaveBeenCalledWith('1', '1')
 
     fireEvent.contextMenu(screen.getByText('Session 1'))
     fireEvent.click(screen.getByText('Archive session'))

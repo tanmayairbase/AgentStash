@@ -37,6 +37,22 @@ export interface SessionTokenUsage {
   totals: SessionTokenUsageTotals
 }
 
+export interface ClaudeUsageEvent extends ModelTokenUsage {
+  id: string
+  timestamp?: string
+}
+
+export interface SessionBranchSummary {
+  id: string
+  title: string
+  createdAt: string
+  updatedAt: string
+  messageCount: number
+  divergencePrompt?: string
+  tokenUsage?: SessionTokenUsage
+  isCurrent: boolean
+}
+
 export interface AppConfig {
   repoRoots: string[]
   discoveryMode: DiscoveryMode
@@ -69,6 +85,13 @@ export interface SessionSummary {
   userArchived?: boolean
   userArchivedAt?: string
   tokenUsage?: SessionTokenUsage
+  lineageMessageIds?: string[]
+  lineageParentMessageIds?: string[]
+  claudeUsageEvents?: ClaudeUsageEvent[]
+  familyId?: string
+  currentBranchId?: string
+  branchCount?: number
+  searchMatchBranchId?: string
 }
 
 export interface SessionMessage {
@@ -115,6 +138,7 @@ export interface MessageStarRecord {
 
 export interface StarredMessageSummary {
   sessionId: string
+  branchId?: string
   messageId: string
   sessionTitle: string
   sessionSource: SessionSource
@@ -128,6 +152,8 @@ export interface StarredMessageSummary {
 
 export interface SessionDetail extends SessionSummary {
   messages: SessionMessage[]
+  branches?: SessionBranchSummary[]
+  familyTokenUsage?: SessionTokenUsage
 }
 
 export interface SyncResult {
@@ -177,7 +203,10 @@ export interface RendererApi {
   getAutoDiscoveredPatterns: () => Promise<AutoDiscoveredPatternInfo[]>
   syncSessions: () => Promise<SyncResult>
   listSessions: (query: string) => Promise<SessionSummary[]>
-  getSessionDetail: (sessionId: string) => Promise<SessionDetail | null>
+  getSessionDetail: (
+    sessionId: string,
+    branchId?: string
+  ) => Promise<SessionDetail | null>
   openSessionInTool: (
     sessionId: string,
     tool: 'vscode' | 'cli'

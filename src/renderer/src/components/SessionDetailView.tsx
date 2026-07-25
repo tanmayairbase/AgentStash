@@ -24,6 +24,7 @@ import {
 } from '@shared/format'
 import { TokenUsageBarWithTooltip } from './TokenUsageBarWithTooltip'
 import { MermaidDiagram } from './MermaidDiagram'
+import { SessionBranchMenu } from './SessionBranchMenu'
 
 export type TranscriptTheme = 'light' | 'dark'
 
@@ -136,7 +137,10 @@ const renderMarkdownContent = (content: string): string =>
 // diagrams. The HTML chunks stay a single dangerouslySetInnerHTML, while each
 // diagram becomes a <MermaidDiagram> that owns its own async SVG.
 const toContentParts = (html: string): ContentPart[] => {
-  if (typeof document === 'undefined' || !html.includes(MERMAID_DIAGRAM_CLASS)) {
+  if (
+    typeof document === 'undefined' ||
+    !html.includes(MERMAID_DIAGRAM_CLASS)
+  ) {
     return [{ kind: 'html', html }]
   }
 
@@ -247,6 +251,7 @@ interface Props {
     messageId: string,
     starred: boolean
   ) => Promise<void> | void
+  onSelectBranch?: (branchId: string) => void
   focusMessageId?: string | null
   onFocusedMessageConsumed?: () => void
 }
@@ -365,6 +370,7 @@ export const SessionDetailView = ({
   theme = 'dark',
   onCopySessionId,
   onToggleMessageStar,
+  onSelectBranch,
   focusMessageId,
   onFocusedMessageConsumed
 }: Props) => {
@@ -575,20 +581,29 @@ export const SessionDetailView = ({
             <span>Messages: {detail.messageCount}</span>
           </div>
         </div>
-        <button
-          type="button"
-          className="detail-copy-session-id"
-          aria-label="Copy session ID"
-          title={`Copy session ID: ${detail.id}`}
-          onClick={() => {
-            void onCopySessionId?.(detail.id)
-          }}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M9 9h10v12H9z" />
-            <path d="M5 3h10v3H8v9H5z" />
-          </svg>
-        </button>
+        <div className="detail-header-actions">
+          {detail.branches && detail.branches.length > 1 ? (
+            <SessionBranchMenu
+              branches={detail.branches}
+              selectedBranchId={detail.id}
+              onSelectBranch={onSelectBranch}
+            />
+          ) : null}
+          <button
+            type="button"
+            className="detail-header-action detail-copy-session-id"
+            aria-label="Copy session ID"
+            title={`Copy session ID: ${detail.id}`}
+            onClick={() => {
+              void onCopySessionId?.(detail.id)
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 9h10v12H9z" />
+              <path d="M5 3h10v3H8v9H5z" />
+            </svg>
+          </button>
+        </div>
         <TokenUsageBarWithTooltip
           usage={
             detail.tokenUsage ??
@@ -606,6 +621,7 @@ export const SessionDetailView = ({
             } satisfies SessionTokenUsage)
           }
           modelLabel={normalizeModelLabel(detail.model)}
+          familyUsage={detail.familyTokenUsage}
         />
       </header>
 
@@ -634,7 +650,9 @@ export const SessionDetailView = ({
             >
               <div className="message-header">
                 <div className="message-role">
-                  {message.role === 'user' ? 'You' : formatAgentName(detail.source)}
+                  {message.role === 'user'
+                    ? 'You'
+                    : formatAgentName(detail.source)}
                   {message.role === 'user' && message.mode ? (
                     <span
                       className={`message-mode-pill message-mode-pill-${message.mode}`}

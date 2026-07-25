@@ -414,9 +414,9 @@ describe('parseSessionArtifacts', () => {
         type: 'user.message',
         data: {
           content:
-            "We are working on rebranding \"Airbase\" with \"Paylocity for Finance\" and the current task at hand is for logos/icons. The audit was done for this re-brand a few weeks ago and it sits in the src/docs directory. I want us to explore how we can prepare a small framework of sorts which can help us switch to using the new logos instead of old. Another thing is, we have an LD flag added for this which will help us decide. There's one caveat though, I think on login pages, card share page and other such pages we won't be able to use launchdarkly flags IIRC. Thinking out loud here -> If stage.airbase.io or airbase.pages.dev URLs, then show PCTY4FIN icons otherwise Airbase - this is for testing on staging/review app. Not sure, validate this thought while at it. let's prepare a plan for this, /grill-me with questions",
+            'We are working on rebranding "Airbase" with "Paylocity for Finance" and the current task at hand is for logos/icons. The audit was done for this re-brand a few weeks ago and it sits in the src/docs directory. I want us to explore how we can prepare a small framework of sorts which can help us switch to using the new logos instead of old. Another thing is, we have an LD flag added for this which will help us decide. There\'s one caveat though, I think on login pages, card share page and other such pages we won\'t be able to use launchdarkly flags IIRC. Thinking out loud here -> If stage.airbase.io or airbase.pages.dev URLs, then show PCTY4FIN icons otherwise Airbase - this is for testing on staging/review app. Not sure, validate this thought while at it. let\'s prepare a plan for this, /grill-me with questions',
           transformedContent:
-            "<current_datetime>2026-03-10T10:00:01.000Z</current_datetime>\n\n[[PLAN]] I want to create an implementation plan. Please:\n1. Analyze the codebase to understand the current state\n2. Ask clarifying questions if my request is ambiguous\n3. Create a structured plan and save it to the plan file in the session folder\n\nMy request: We are working on rebranding \"Airbase\" with \"Paylocity for Finance\" and the current task at hand is for logos/icons. The audit was done for this re-brand a few weeks ago and it sits in the src/docs directory. I want us to explore how we can prepare a small framework of sorts which can help us switch to using the new logos instead of old. Another thing is, we have an LD flag added for this which will help us decide. There's one caveat though, I think on login pages, card share page and other such pages we won't be able to use launchdarkly flags IIRC. Thinking out loud here -> If stage.airbase.io or airbase.pages.dev URLs, then show PCTY4FIN icons otherwise Airbase - this is for testing on staging/review app. Not sure, validate this thought while at it. let's prepare a plan for this, /grill-me with questions"
+            '<current_datetime>2026-03-10T10:00:01.000Z</current_datetime>\n\n[[PLAN]] I want to create an implementation plan. Please:\n1. Analyze the codebase to understand the current state\n2. Ask clarifying questions if my request is ambiguous\n3. Create a structured plan and save it to the plan file in the session folder\n\nMy request: We are working on rebranding "Airbase" with "Paylocity for Finance" and the current task at hand is for logos/icons. The audit was done for this re-brand a few weeks ago and it sits in the src/docs directory. I want us to explore how we can prepare a small framework of sorts which can help us switch to using the new logos instead of old. Another thing is, we have an LD flag added for this which will help us decide. There\'s one caveat though, I think on login pages, card share page and other such pages we won\'t be able to use launchdarkly flags IIRC. Thinking out loud here -> If stage.airbase.io or airbase.pages.dev URLs, then show PCTY4FIN icons otherwise Airbase - this is for testing on staging/review app. Not sure, validate this thought while at it. let\'s prepare a plan for this, /grill-me with questions'
         },
         timestamp: '2026-03-10T10:00:01.000Z'
       })
@@ -431,7 +431,7 @@ describe('parseSessionArtifacts', () => {
 
     expect(parsed).toHaveLength(1)
     expect(parsed[0].messages[0]?.content).toBe(
-      "We are working on rebranding \"Airbase\" with \"Paylocity for Finance\" and the current task at hand is for logos/icons. The audit was done for this re-brand a few weeks ago and it sits in the src/docs directory. I want us to explore how we can prepare a small framework of sorts which can help us switch to using the new logos instead of old.\n\nAnother thing is, we have an LD flag added for this which will help us decide.\n\nThere's one caveat though, I think on login pages, card share page and other such pages we won't be able to use launchdarkly flags IIRC.\n\nThinking out loud here -> If stage.airbase.io or airbase.pages.dev URLs, then show PCTY4FIN icons otherwise Airbase - this is for testing on staging/review app.\n\nNot sure, validate this thought while at it.\n\nlet's prepare a plan for this, /grill-me with questions"
+      'We are working on rebranding "Airbase" with "Paylocity for Finance" and the current task at hand is for logos/icons. The audit was done for this re-brand a few weeks ago and it sits in the src/docs directory. I want us to explore how we can prepare a small framework of sorts which can help us switch to using the new logos instead of old.\n\nAnother thing is, we have an LD flag added for this which will help us decide.\n\nThere\'s one caveat though, I think on login pages, card share page and other such pages we won\'t be able to use launchdarkly flags IIRC.\n\nThinking out loud here -> If stage.airbase.io or airbase.pages.dev URLs, then show PCTY4FIN icons otherwise Airbase - this is for testing on staging/review app.\n\nNot sure, validate this thought while at it.\n\nlet\'s prepare a plan for this, /grill-me with questions'
     )
     expect(parsed[0].messages[0]?.format).toBe('markdown')
     expect(parsed[0].messages[0]?.mode).toBe('plan')
@@ -951,8 +951,7 @@ describe('parseSessionArtifacts', () => {
     ].join('\n')
 
     const parsed = parseSessionArtifacts(raw, {
-      filePath:
-        '/Users/me/.copilot/session-state/session-resumed/events.jsonl',
+      filePath: '/Users/me/.copilot/session-state/session-resumed/events.jsonl',
       repoRoot: '/tmp/repo-resumed',
       source: 'cli'
     })
@@ -1136,7 +1135,11 @@ describe('Claude Code sessions', () => {
         message: {
           role: 'user',
           content: [
-            { type: 'tool_result', tool_use_id: 'toolu_1', content: 'All tests passed.' }
+            {
+              type: 'tool_result',
+              tool_use_id: 'toolu_1',
+              content: 'All tests passed.'
+            }
           ]
         },
         timestamp: '2026-01-01T10:00:06.000Z',
@@ -1195,8 +1198,14 @@ describe('Claude Code sessions', () => {
           role: 'assistant',
           model: 'claude-opus-4-8',
           content: [
-            { type: 'thinking', thinking: 'Let me trace the stack trace first.' },
-            { type: 'text', text: 'It fails because the index is out of range.' }
+            {
+              type: 'thinking',
+              thinking: 'Let me trace the stack trace first.'
+            },
+            {
+              type: 'text',
+              text: 'It fails because the index is out of range.'
+            }
           ]
         },
         timestamp: '2026-01-01T10:00:05.000Z',
@@ -1290,6 +1299,11 @@ describe('Claude Code sessions', () => {
         type: 'ai-title',
         aiTitle: 'Open sip-rebalance page locally',
         sessionId: 'session-claude-title'
+      }),
+      JSON.stringify({
+        type: 'custom-title',
+        customTitle: 'Local SIP rebalance investigation',
+        sessionId: 'session-claude-title'
       })
     ].join('\n')
 
@@ -1300,7 +1314,9 @@ describe('Claude Code sessions', () => {
       source: 'claude'
     })
 
-    expect(parsed[0].session.title).toBe('Open sip-rebalance page locally')
+    expect(parsed[0].session.title).toBe('Local SIP rebalance investigation')
+    expect(parsed[0].session.createdAt).toBe('2026-01-01T10:00:00.000Z')
+    expect(parsed[0].session.updatedAt).toBe('2026-01-01T10:00:05.000Z')
   })
 
   it('maps Claude plan mode to plan; acceptEdits and default get no mode (Claude Code has no autopilot)', () => {
@@ -1483,8 +1499,15 @@ describe('Claude Code sessions', () => {
                     question: 'Push commit 20671ef to origin/master?',
                     header: 'Push to remote',
                     options: [
-                      { label: 'Yes, push now', description: 'Push the new commit to origin/master on GitHub.' },
-                      { label: 'No, hold off', description: 'Keep the commit local for now.' }
+                      {
+                        label: 'Yes, push now',
+                        description:
+                          'Push the new commit to origin/master on GitHub.'
+                      },
+                      {
+                        label: 'No, hold off',
+                        description: 'Keep the commit local for now.'
+                      }
                     ],
                     multiSelect: false
                   }
@@ -1544,8 +1567,14 @@ describe('Claude Code sessions', () => {
         question: 'Push commit 20671ef to origin/master?',
         header: 'Push to remote',
         options: [
-          { label: 'Yes, push now', description: 'Push the new commit to origin/master on GitHub.' },
-          { label: 'No, hold off', description: 'Keep the commit local for now.' }
+          {
+            label: 'Yes, push now',
+            description: 'Push the new commit to origin/master on GitHub.'
+          },
+          {
+            label: 'No, hold off',
+            description: 'Keep the commit local for now.'
+          }
         ],
         multiSelect: false,
         answer: 'Yes, push now'
@@ -1580,8 +1609,15 @@ describe('Claude Code sessions', () => {
                     question: 'Push commit 20671ef to origin/master?',
                     header: 'Push to remote',
                     options: [
-                      { label: 'Yes, push now', description: 'Push the new commit to origin/master on GitHub.' },
-                      { label: 'No, hold off', description: 'Keep the commit local for now.' }
+                      {
+                        label: 'Yes, push now',
+                        description:
+                          'Push the new commit to origin/master on GitHub.'
+                      },
+                      {
+                        label: 'No, hold off',
+                        description: 'Keep the commit local for now.'
+                      }
                     ],
                     multiSelect: false
                   }
@@ -1606,8 +1642,7 @@ describe('Claude Code sessions', () => {
               content: [
                 {
                   type: 'text',
-                  text:
-                    'Your questions have been answered: "Push commit 20671ef to origin/master?"="Yes, push now". You can now continue with these answers in mind.'
+                  text: 'Your questions have been answered: "Push commit 20671ef to origin/master?"="Yes, push now". You can now continue with these answers in mind.'
                 }
               ]
             }
@@ -1682,7 +1717,8 @@ describe('Claude Code sessions', () => {
             {
               type: 'tool_result',
               tool_use_id: 'toolu_ask2',
-              content: 'User dismissed the question without a structured answer.'
+              content:
+                'User dismissed the question without a structured answer.'
             }
           ]
         },
@@ -1721,6 +1757,7 @@ describe('Claude Code sessions', () => {
         type: 'assistant',
         uuid: 'a1',
         message: {
+          id: 'msg-api-1',
           role: 'assistant',
           model: 'claude-sonnet-4-6',
           content: [{ type: 'text', text: 'Looking into it.' }],
@@ -1751,6 +1788,7 @@ describe('Claude Code sessions', () => {
         type: 'assistant',
         uuid: 'a2',
         message: {
+          id: 'msg-api-2',
           role: 'assistant',
           model: 'claude-sonnet-4-6',
           content: [{ type: 'text', text: 'Found the bug.' }],
@@ -1762,10 +1800,33 @@ describe('Claude Code sessions', () => {
               ephemeral_5m_input_tokens: 0,
               ephemeral_1h_input_tokens: 100
             },
-            output_tokens: 40
+            output_tokens: 4
           }
         },
         timestamp: '2026-01-01T10:01:05.000Z',
+        cwd: '/tmp/repo-claude',
+        sessionId: 'session-claude-usage'
+      }),
+      JSON.stringify({
+        type: 'assistant',
+        uuid: 'a2-parallel',
+        parentUuid: 'u2',
+        message: {
+          id: 'msg-api-2',
+          role: 'assistant',
+          model: 'claude-sonnet-4-6',
+          content: [{ type: 'text', text: 'Parallel tool result.' }],
+          usage: {
+            input_tokens: 20,
+            cache_read_input_tokens: 700,
+            cache_creation: {
+              ephemeral_5m_input_tokens: 0,
+              ephemeral_1h_input_tokens: 100
+            },
+            output_tokens: 40
+          }
+        },
+        timestamp: '2026-01-01T10:01:06.000Z',
         cwd: '/tmp/repo-claude',
         sessionId: 'session-claude-usage'
       })
@@ -1798,5 +1859,6 @@ describe('Claude Code sessions', () => {
       outputTokens: 120,
       reasoningTokens: 0
     })
+    expect(parsed[0].session.claudeUsageEvents).toHaveLength(2)
   })
 })

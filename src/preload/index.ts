@@ -78,8 +78,8 @@ const api: RendererApi = {
     ipcRenderer.invoke('sessions:list', query),
   listStarredMessages: async (query: string) =>
     ipcRenderer.invoke('sessions:list-starred', query),
-  getSessionDetail: async (sessionId: string) =>
-    ipcRenderer.invoke('sessions:get', sessionId),
+  getSessionDetail: async (sessionId: string, branchId?: string) =>
+    ipcRenderer.invoke('sessions:get', sessionId, branchId),
   openSessionInTool: async (sessionId: string, tool: 'vscode' | 'cli') =>
     ipcRenderer.invoke('sessions:open-tool', sessionId, tool),
   setSessionArchived: async (sessionId: string, archived: boolean) =>
