@@ -13,6 +13,7 @@ import {
   toTildePath
 } from '@shared/format'
 import type { SessionCostCategory } from '../../../shared/pricing'
+import { BranchIcon } from './BranchIcon'
 import { SessionCostChip } from './SessionCostChip'
 
 type DateFilterValue = DateFilterPreset | ''
@@ -513,8 +514,14 @@ export const SessionListSidebar = ({
           )}
           <span>{formatSessionOrigin(session.source)}</span>
           {(session.branchCount ?? 0) > 1 && (
-            <span className="session-branch-badge">
-              {session.branchCount} branches
+            <span
+              className="session-branch-badge"
+              aria-label={`${session.branchCount} branches`}
+              title={`${session.branchCount} branches`}
+            >
+              <span aria-hidden="true">&middot;</span>
+              <span>{session.branchCount}</span>
+              <BranchIcon />
             </span>
           )}
           {session.searchMatchBranchId &&

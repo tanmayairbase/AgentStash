@@ -531,6 +531,19 @@ button:hover {
 .session-branch-badge {
   color: var(--text-accent-soft);
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.session-branch-badge svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .session-branch-match {
@@ -932,20 +945,40 @@ button:hover {
   width: 100%;
 }
 
-.detail-copy-session-id {
+.detail-header-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   flex: 0 0 auto;
-  align-self: flex-start;
+}
+
+.detail-header-action {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  height: 30px;
   background: var(--surface-subtle);
   border: 1px solid var(--border-default);
-  padding: 6px 8px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.detail-copy-session-id svg {
+.detail-header-action:hover {
+  background: var(--surface-subtle-hover);
+}
+
+.detail-header-action:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}
+
+.detail-header-action svg {
   width: 15px;
   height: 15px;
+}
+
+.detail-copy-session-id svg {
   fill: currentColor;
 }
 
@@ -957,28 +990,118 @@ button:hover {
   white-space: nowrap;
 }
 
-.detail-branch-picker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  color: var(--text-muted);
-  font-size: 12px;
+.detail-branch-menu {
+  position: relative;
 }
 
-.detail-branch-picker select {
-  min-width: 0;
-  max-width: min(620px, 100%);
-  border: 1px solid var(--border-default);
-  border-radius: 7px;
-  background: var(--surface-subtle);
-  padding: 5px 28px 5px 8px;
+.detail-branch-trigger {
+  gap: 5px;
+  min-width: 42px;
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
-.detail-branch-picker select:focus-visible {
+.detail-branch-trigger svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.detail-branch-trigger--older {
+  border-color: var(--accent-warning);
+  color: var(--accent-warning);
+}
+
+.detail-branch-trigger--older:hover {
+  background: var(--surface-subtle-hover);
+}
+
+.detail-branch-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 300px;
+  max-width: min(460px, calc(100vw - 32px));
+  padding: 5px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-floating);
+}
+
+.detail-branch-menu-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.detail-branch-menu-item:hover,
+.detail-branch-menu-item:focus-visible {
+  background: var(--surface-subtle-hover);
+}
+
+.detail-branch-menu-item:focus-visible {
   outline: 2px solid var(--accent-focus-ring);
-  outline-offset: 2px;
+  outline-offset: -2px;
+}
+
+.detail-branch-menu-check {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.detail-branch-menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-branch-menu-tooltip {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 8px;
+  z-index: 31;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 48px));
+  padding: 6px 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-floating);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.detail-branch-menu-item:hover .detail-branch-menu-tooltip,
+.detail-branch-menu-item:focus-visible .detail-branch-menu-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-branch-menu-tooltip {
+    transition: none;
+  }
 }
 
 .detail-meta {

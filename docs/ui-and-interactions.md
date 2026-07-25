@@ -73,7 +73,8 @@ Current behavior:
 - markdown and ANSI rendering
 - artifact chips for references and edits
 - token-usage visualization and estimated-cost detail when token pricing data is available
-- a Claude branch picker labeled by divergence time and first branch-unique prompt
+- a compact Claude branch-count action beside Copy Session ID, opening a menu
+  labeled by divergence time and first branch-unique prompt
 - the newest Claude branch by default, with search navigation opening the matching branch
 - selected-branch usage plus a deduplicated conversation total in the usage tooltip
 - message starring

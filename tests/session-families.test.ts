@@ -170,6 +170,12 @@ describe('Claude session families', () => {
     expect(currentDetail?.id).toBe('branch-new')
     expect(currentDetail?.branches).toHaveLength(2)
     expect(currentDetail?.familyTokenUsage?.totals.inputTokens).toBe(60)
+    expect(storage.getSessionDetail(family!.id, 'branch-old')?.id).toBe(
+      'branch-old'
+    )
+    expect(storage.getSessionDetail(family!.id, 'independent')?.id).toBe(
+      'branch-new'
+    )
 
     storage.setMessageStarred(family!.id, 'shared-message', true)
     expect(

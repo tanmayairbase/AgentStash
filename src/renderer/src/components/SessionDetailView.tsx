@@ -20,11 +20,11 @@ import {
   formatMinuteKeyIST,
   formatSessionOrigin,
   formatTimestampIST,
-  normalizeModelLabel,
-  toSearchPreview
+  normalizeModelLabel
 } from '@shared/format'
 import { TokenUsageBarWithTooltip } from './TokenUsageBarWithTooltip'
 import { MermaidDiagram } from './MermaidDiagram'
+import { SessionBranchMenu } from './SessionBranchMenu'
 
 export type TranscriptTheme = 'light' | 'dark'
 
@@ -278,16 +278,6 @@ const toFileLabel = (path: string): string => {
 
 const formatExecutionMode = (mode: SessionExecutionMode): string =>
   mode === 'autopilot' ? 'Autopilot' : 'Plan'
-
-const formatBranchLabel = (
-  branch: NonNullable<SessionDetail['branches']>[number]
-): string => {
-  const status = branch.isCurrent ? 'Current' : 'Older'
-  const prompt = branch.divergencePrompt
-    ? ` - ${toSearchPreview(branch.divergencePrompt, 56)}`
-    : ''
-  return `${status} - ${formatTimestampIST(branch.updatedAt)}${prompt}`
-}
 
 const groupMessagesByMinute = (messages: SessionMessage[]): MessageGroup[] => {
   const groups: MessageGroup[] = []
@@ -583,22 +573,6 @@ export const SessionDetailView = ({
       <header className="detail-header">
         <div className="detail-title-wrap">
           <h2 title={detail.title}>{detail.title}</h2>
-          {detail.branches && detail.branches.length > 1 ? (
-            <label className="detail-branch-picker">
-              <span>Branch</span>
-              <select
-                aria-label="Conversation branch"
-                value={detail.id}
-                onChange={event => onSelectBranch?.(event.target.value)}
-              >
-                {detail.branches.map(branch => (
-                  <option key={branch.id} value={branch.id}>
-                    {formatBranchLabel(branch)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
           <div className="detail-meta">
             <span>Origin: {formatSessionOrigin(detail.source)}</span>
             {detail.agent ? <span>Agent: {detail.agent}</span> : null}
@@ -607,20 +581,29 @@ export const SessionDetailView = ({
             <span>Messages: {detail.messageCount}</span>
           </div>
         </div>
-        <button
-          type="button"
-          className="detail-copy-session-id"
-          aria-label="Copy session ID"
-          title={`Copy session ID: ${detail.id}`}
-          onClick={() => {
-            void onCopySessionId?.(detail.id)
-          }}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M9 9h10v12H9z" />
-            <path d="M5 3h10v3H8v9H5z" />
-          </svg>
-        </button>
+        <div className="detail-header-actions">
+          {detail.branches && detail.branches.length > 1 ? (
+            <SessionBranchMenu
+              branches={detail.branches}
+              selectedBranchId={detail.id}
+              onSelectBranch={onSelectBranch}
+            />
+          ) : null}
+          <button
+            type="button"
+            className="detail-header-action detail-copy-session-id"
+            aria-label="Copy session ID"
+            title={`Copy session ID: ${detail.id}`}
+            onClick={() => {
+              void onCopySessionId?.(detail.id)
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M9 9h10v12H9z" />
+              <path d="M5 3h10v3H8v9H5z" />
+            </svg>
+          </button>
+        </div>
         <TokenUsageBarWithTooltip
           usage={
             detail.tokenUsage ??

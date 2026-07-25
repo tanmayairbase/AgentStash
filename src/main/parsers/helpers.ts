@@ -5,7 +5,9 @@ import type {
   SessionMessage,
   SessionSource,
   SessionSummary,
-  SessionTokenUsageTotals
+  SessionTokenUsage,
+  SessionTokenUsageTotals,
+  TokenUsageSource
 } from '../../shared/types'
 
 export interface ParseContext {
@@ -192,6 +194,36 @@ export const sumModelTotals = (
     }),
     { ...ZERO_TOTALS }
   )
+
+export const aggregateTokenUsageByModel = (
+  entries: readonly ModelTokenUsage[],
+  source: Exclude<TokenUsageSource, 'unavailable'>
+): SessionTokenUsage => {
+  const byModelMap = new Map<string, ModelTokenUsage>()
+  for (const entry of entries) {
+    const current = byModelMap.get(entry.modelId) ?? {
+      modelId: entry.modelId,
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      cacheWriteTokens: 0,
+      cacheWrite1hTokens: 0,
+      outputTokens: 0,
+      reasoningTokens: 0
+    }
+    current.inputTokens += entry.inputTokens
+    current.cachedInputTokens += entry.cachedInputTokens
+    current.cacheWriteTokens += entry.cacheWriteTokens
+    current.cacheWrite1hTokens += entry.cacheWrite1hTokens
+    current.outputTokens += entry.outputTokens
+    current.reasoningTokens += entry.reasoningTokens
+    byModelMap.set(entry.modelId, current)
+  }
+
+  const byModel = [...byModelMap.values()]
+  return byModel.length > 0
+    ? { source, byModel, totals: sumModelTotals(byModel) }
+    : { source: 'unavailable', byModel: [], totals: { ...ZERO_TOTALS } }
+}
 
 export const appendExecutionMode = (
   modes: SessionExecutionMode[],

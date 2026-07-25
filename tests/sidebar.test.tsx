@@ -223,7 +223,7 @@ describe('SessionListSidebar', () => {
       ],
       query: 'older prompt'
     })
-    expect(screen.getByText('2 branches')).toBeTruthy()
+    expect(screen.getByLabelText('2 branches')).toBeTruthy()
     expect(screen.getByText('Match in older branch')).toBeTruthy()
   })
 

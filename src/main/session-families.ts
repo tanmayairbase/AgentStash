@@ -1,12 +1,11 @@
 import type {
   ClaudeUsageEvent,
-  ModelTokenUsage,
   SessionBranchSummary,
   SessionMessage,
   SessionSummary,
   SessionTokenUsage
 } from '../shared/types'
-import { sumModelTotals, ZERO_TOTALS } from './parsers/helpers'
+import { aggregateTokenUsageByModel } from './parsers/helpers'
 
 export interface SessionFamilyIndex {
   summaries: SessionSummary[]
@@ -50,35 +49,15 @@ const aggregateUsageEvents = (
   }
 
   if (eventsById.size === 0) {
+    // Pre-v17 persisted sessions have no API usage events until the next sync.
+    // Preserve their prior selected-branch estimate instead of summing duplicates.
     return sessions.slice().sort(compareNewest)[0]?.tokenUsage
   }
 
-  const byModelMap = new Map<string, ModelTokenUsage>()
-  for (const event of eventsById.values()) {
-    const current = byModelMap.get(event.modelId) ?? {
-      modelId: event.modelId,
-      inputTokens: 0,
-      cachedInputTokens: 0,
-      cacheWriteTokens: 0,
-      cacheWrite1hTokens: 0,
-      outputTokens: 0,
-      reasoningTokens: 0
-    }
-    current.inputTokens += event.inputTokens
-    current.cachedInputTokens += event.cachedInputTokens
-    current.cacheWriteTokens += event.cacheWriteTokens
-    current.cacheWrite1hTokens += event.cacheWrite1hTokens
-    current.outputTokens += event.outputTokens
-    current.reasoningTokens += event.reasoningTokens
-    byModelMap.set(event.modelId, current)
-  }
-
-  const byModel = [...byModelMap.values()]
-  return {
-    source: 'claude-messages',
-    byModel,
-    totals: byModel.length > 0 ? sumModelTotals(byModel) : { ...ZERO_TOTALS }
-  }
+  return aggregateTokenUsageByModel(
+    [...eventsById.values()],
+    'claude-messages'
+  )
 }
 
 const buildBranchSummaries = (
@@ -100,6 +79,8 @@ const buildBranchSummaries = (
     .slice()
     .sort(compareNewest)
     .map(member => {
+      // Claude preserves UUIDs for the shared prefix, so the first user UUID
+      // unique to one file is the best available branch divergence label.
       const divergencePrompt = (messagesBySession.get(member.id) ?? []).find(
         message =>
           message.role === 'user' && messageOccurrences.get(message.id) === 1

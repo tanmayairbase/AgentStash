@@ -1,13 +1,12 @@
 import { basename, extname } from 'node:path'
 import type {
   ClaudeUsageEvent,
-  ModelTokenUsage,
   SessionExecutionMode,
   SessionMessage,
-  SessionSummary,
-  SessionTokenUsage
+  SessionSummary
 } from '../../shared/types'
 import {
+  aggregateTokenUsageByModel,
   appendExecutionMode,
   asNumber,
   asRecord,
@@ -15,9 +14,7 @@ import {
   inferFormat,
   parseJsonLines,
   stableId,
-  sumModelTotals,
   toIso,
-  ZERO_TOTALS,
   type ParseContext,
   type ParsedSession
 } from './helpers'
@@ -235,42 +232,6 @@ const collectClaudeUsageEvents = (
   return [...eventsById.values()]
 }
 
-const aggregateClaudeTokenUsage = (
-  events: ClaudeUsageEvent[]
-): SessionTokenUsage => {
-  const perModel = new Map<string, ModelTokenUsage>()
-
-  for (const event of events) {
-    const existing = perModel.get(event.modelId) ?? {
-      modelId: event.modelId,
-      inputTokens: 0,
-      cachedInputTokens: 0,
-      cacheWriteTokens: 0,
-      cacheWrite1hTokens: 0,
-      outputTokens: 0,
-      reasoningTokens: 0
-    }
-    existing.inputTokens += event.inputTokens
-    existing.cachedInputTokens += event.cachedInputTokens
-    existing.cacheWriteTokens += event.cacheWriteTokens
-    existing.cacheWrite1hTokens += event.cacheWrite1hTokens
-    existing.outputTokens += event.outputTokens
-    existing.reasoningTokens += event.reasoningTokens
-    perModel.set(event.modelId, existing)
-  }
-
-  if (perModel.size === 0) {
-    return {
-      source: 'unavailable',
-      byModel: [],
-      totals: { ...ZERO_TOTALS }
-    }
-  }
-
-  const byModel = Array.from(perModel.values())
-  return { source: 'claude-messages', byModel, totals: sumModelTotals(byModel) }
-}
-
 export const parseClaudeCodeSessionLog = (
   raw: string,
   context: ParseContext
@@ -386,7 +347,10 @@ export const parseClaudeCodeSessionLog = (
     filePath: context.filePath,
     openVscodeTarget: context.filePath,
     openCliCwd: repoPath,
-    tokenUsage: aggregateClaudeTokenUsage(claudeUsageEvents),
+    tokenUsage: aggregateTokenUsageByModel(
+      claudeUsageEvents,
+      'claude-messages'
+    ),
     lineageMessageIds,
     lineageParentMessageIds,
     claudeUsageEvents

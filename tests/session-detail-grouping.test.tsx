@@ -136,6 +136,8 @@ describe('SessionDetailView grouping', () => {
 
   it('switches between related Claude branches from the detail header', () => {
     const onSelectBranch = vi.fn()
+    const olderBranchPrompt =
+      'Use a simpler retry loop with bounded exponential backoff and clear cancellation semantics'
     const branchDetail: SessionDetail = {
       ...detail,
       id: 'branch-new',
@@ -159,24 +161,42 @@ describe('SessionDetailView grouping', () => {
           createdAt: '2026-03-11T10:00:00.000Z',
           updatedAt: '2026-03-11T10:03:00.000Z',
           messageCount: 3,
-          divergencePrompt: 'Use a simpler retry loop',
+          divergencePrompt: olderBranchPrompt,
           isCurrent: false
         }
       ]
     }
 
-    render(
+    const { rerender } = render(
       <SessionDetailView
         detail={branchDetail}
         onSelectBranch={onSelectBranch}
       />
     )
 
-    expect(screen.getByLabelText('Conversation branch')).toBeTruthy()
-    fireEvent.change(screen.getByLabelText('Conversation branch'), {
-      target: { value: 'branch-old' }
+    fireEvent.click(
+      screen.getByLabelText('Switch conversation branch, 2 branches')
+    )
+    const olderBranchItem = screen.getByRole('menuitemradio', {
+      name: /Older.*Use a simpler retry loop/
     })
+    expect(
+      olderBranchItem.querySelector('[role="tooltip"]')?.textContent
+    ).toContain(olderBranchPrompt)
+    fireEvent.click(olderBranchItem)
     expect(onSelectBranch).toHaveBeenCalledWith('branch-old')
+
+    rerender(
+      <SessionDetailView
+        detail={{ ...branchDetail, id: 'branch-old' }}
+        onSelectBranch={onSelectBranch}
+      />
+    )
+    expect(
+      screen.getByLabelText(
+        'Switch conversation branch, 2 branches, viewing older branch'
+      ).classList.contains('detail-branch-trigger--older')
+    ).toBe(true)
   })
 
   it('shows chunked transcript loading controls for large sessions', () => {
