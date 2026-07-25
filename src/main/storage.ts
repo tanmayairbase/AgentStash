@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import type {
+  ClaudeUsageEvent,
   MessageStarRecord,
   SessionDetail,
   SessionExecutionMode,
@@ -10,6 +11,7 @@ import type {
   StarredMessageSummary
 } from '../shared/types'
 import { logError, logInfo, logWarn } from './logger'
+import { buildSessionFamilyIndex } from './session-families'
 
 export interface SessionInsert {
   session: SessionSummary
@@ -92,12 +94,53 @@ const normalizeSessionSummary = (session: SessionSummary): SessionSummary => {
   const lastSeenAt = ensureIso(session.lastSeenAt, updatedAt)
   const modes = normalizeExecutionModes(session.modes)
   const latestMode =
-    normalizeExecutionMode(session.latestMode) ?? modes?.[modes.length - 1] ?? null
+    normalizeExecutionMode(session.latestMode) ??
+    modes?.[modes.length - 1] ??
+    null
   const userArchived = Boolean(session.userArchived)
   const userArchivedAt = userArchived
     ? ensureIso(session.userArchivedAt, updatedAt)
     : undefined
   const parentSessionId = normalizeOptionalText(session.parentSessionId)
+  const normalizeStringArray = (values: unknown): string[] | undefined => {
+    if (!Array.isArray(values)) {
+      return undefined
+    }
+    const normalized = values
+      .map(value => normalizeOptionalText(value))
+      .filter((value): value is string => Boolean(value))
+    return normalized.length > 0 ? [...new Set(normalized)] : undefined
+  }
+  const claudeUsageEvents = Array.isArray(session.claudeUsageEvents)
+    ? session.claudeUsageEvents
+        .filter(
+          (event): event is ClaudeUsageEvent =>
+            Boolean(event) &&
+            typeof event.id === 'string' &&
+            typeof event.modelId === 'string'
+        )
+        .map(event => ({
+          ...event,
+          inputTokens: Number.isFinite(event.inputTokens)
+            ? event.inputTokens
+            : 0,
+          cachedInputTokens: Number.isFinite(event.cachedInputTokens)
+            ? event.cachedInputTokens
+            : 0,
+          cacheWriteTokens: Number.isFinite(event.cacheWriteTokens)
+            ? event.cacheWriteTokens
+            : 0,
+          cacheWrite1hTokens: Number.isFinite(event.cacheWrite1hTokens)
+            ? event.cacheWrite1hTokens
+            : 0,
+          outputTokens: Number.isFinite(event.outputTokens)
+            ? event.outputTokens
+            : 0,
+          reasoningTokens: Number.isFinite(event.reasoningTokens)
+            ? event.reasoningTokens
+            : 0
+        }))
+    : undefined
 
   return {
     ...session,
@@ -105,6 +148,11 @@ const normalizeSessionSummary = (session: SessionSummary): SessionSummary => {
     updatedAt,
     isSubagentSession: Boolean(session.isSubagentSession),
     parentSessionId,
+    lineageMessageIds: normalizeStringArray(session.lineageMessageIds),
+    lineageParentMessageIds: normalizeStringArray(
+      session.lineageParentMessageIds
+    ),
+    claudeUsageEvents,
     modes,
     latestMode,
     firstSeenAt,
@@ -174,9 +222,19 @@ export class SessionStorage {
   private store: PersistedStore
   private sessionById = new Map<string, SessionSummary>()
   private messagesBySession = new Map<string, SessionMessage[]>()
-  private messageLookupBySession = new Map<string, Map<string, SessionMessage>>()
+  private messageLookupBySession = new Map<
+    string,
+    Map<string, SessionMessage>
+  >()
   private starsBySession = new Map<string, MessageStarRecord[]>()
   private searchIndexBySession = new Map<string, string>()
+  private familySummaryById = new Map<string, SessionSummary>()
+  private familyMembersById = new Map<string, SessionSummary[]>()
+  private familyIdBySessionId = new Map<string, string>()
+  private branchesByFamilyId = new Map<
+    string,
+    NonNullable<SessionDetail['branches']>
+  >()
   private detailCache = new Map<string, SessionDetail>()
   private readonly detailCacheLimit = 24
 
@@ -211,7 +269,9 @@ export class SessionStorage {
         sessions: parsed.sessions.map(session =>
           normalizeSessionSummary(session)
         ),
-        messages: parsed.messages.map(message => normalizeSessionMessage(message)),
+        messages: parsed.messages.map(message =>
+          normalizeSessionMessage(message)
+        ),
         stars: parsedStars,
         artifacts: Array.isArray((parsed as { artifacts?: unknown }).artifacts)
           ? (
@@ -253,13 +313,18 @@ export class SessionStorage {
   }
 
   private buildSearchHaystack(session: SessionSummary): string {
-    const messages = this.messagesBySession.get(session.id) ?? []
+    const members = this.familyMembersById.get(session.id) ?? [session]
+    const messages = members.flatMap(
+      member => this.messagesBySession.get(member.id) ?? []
+    )
     return [
-      session.id,
-      session.title,
-      session.repoPath,
-      session.agent ?? '',
-      session.model ?? '',
+      ...members.flatMap(member => [
+        member.id,
+        member.title,
+        member.repoPath,
+        member.agent ?? '',
+        member.model ?? ''
+      ]),
       ...messages.map(message => message.content)
     ]
       .join('\n')
@@ -301,27 +366,42 @@ export class SessionStorage {
       )
     }
 
+    const familyIndex = buildSessionFamilyIndex(
+      this.store.sessions,
+      this.messagesBySession
+    )
+    this.familySummaryById = new Map(
+      familyIndex.summaries.map(session => [session.id, session])
+    )
+    this.familyMembersById = familyIndex.membersByFamilyId
+    this.familyIdBySessionId = familyIndex.familyIdBySessionId
+    this.branchesByFamilyId = familyIndex.branchesByFamilyId
+
     this.searchIndexBySession = new Map()
-    for (const session of this.store.sessions) {
-      this.searchIndexBySession.set(session.id, this.buildSearchHaystack(session))
+    for (const session of familyIndex.summaries) {
+      this.searchIndexBySession.set(
+        session.id,
+        this.buildSearchHaystack(session)
+      )
     }
     this.detailCache.clear()
   }
 
   private refreshSessionSearchIndex(sessionId: string): void {
-    const session = this.sessionById.get(sessionId)
+    const familyId = this.familyIdBySessionId.get(sessionId) ?? sessionId
+    const session = this.familySummaryById.get(familyId)
     if (!session) {
-      this.searchIndexBySession.delete(sessionId)
+      this.searchIndexBySession.delete(familyId)
       return
     }
-    this.searchIndexBySession.set(sessionId, this.buildSearchHaystack(session))
+    this.searchIndexBySession.set(familyId, this.buildSearchHaystack(session))
   }
 
-  private setDetailCache(detail: SessionDetail): void {
-    if (this.detailCache.has(detail.id)) {
-      this.detailCache.delete(detail.id)
+  private setDetailCache(cacheKey: string, detail: SessionDetail): void {
+    if (this.detailCache.has(cacheKey)) {
+      this.detailCache.delete(cacheKey)
     }
-    this.detailCache.set(detail.id, detail)
+    this.detailCache.set(cacheKey, detail)
     if (this.detailCache.size <= this.detailCacheLimit) {
       return
     }
@@ -526,7 +606,7 @@ export class SessionStorage {
     const startedAt = performance.now()
     const trimmed = query.trim()
     if (!trimmed) {
-      const results = [...this.store.sessions].sort(
+      const results = [...this.familySummaryById.values()].sort(
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )
@@ -538,10 +618,40 @@ export class SessionStorage {
     }
 
     const needle = normalize(trimmed)
-    const results = this.store.sessions
+    const results = [...this.familySummaryById.values()]
       .filter(session => {
         const haystack = this.searchIndexBySession.get(session.id)
         return Boolean(haystack?.includes(needle))
+      })
+      .map(session => {
+        const matchingBranch = (
+          this.familyMembersById.get(session.id) ?? [session]
+        )
+          .filter(member =>
+            [
+              member.id,
+              member.title,
+              member.repoPath,
+              member.agent ?? '',
+              member.model ?? '',
+              ...(this.messagesBySession.get(member.id) ?? []).map(
+                message => message.content
+              )
+            ]
+              .join('\n')
+              .toLowerCase()
+              .includes(needle)
+          )
+          .sort(
+            (left, right) =>
+              new Date(right.updatedAt).getTime() -
+                new Date(left.updatedAt).getTime() ||
+              right.messageCount - left.messageCount ||
+              left.id.localeCompare(right.id)
+          )[0]
+        return matchingBranch
+          ? { ...session, searchMatchBranchId: matchingBranch.id }
+          : session
       })
       .sort(
         (a, b) =>
@@ -555,12 +665,18 @@ export class SessionStorage {
     return results
   }
 
-  getSessionDetail(sessionId: string): SessionDetail | null {
+  getSessionDetail(
+    sessionId: string,
+    requestedBranchId?: string
+  ): SessionDetail | null {
     const startedAt = performance.now()
-    const cached = this.detailCache.get(sessionId)
+    const cacheKey = requestedBranchId
+      ? `${sessionId}:${requestedBranchId}`
+      : sessionId
+    const cached = this.detailCache.get(cacheKey)
     if (cached) {
-      this.detailCache.delete(sessionId)
-      this.detailCache.set(sessionId, cached)
+      this.detailCache.delete(cacheKey)
+      this.detailCache.set(cacheKey, cached)
       logInfo('Loaded session detail from cache', {
         sessionId,
         messages: cached.messages.length,
@@ -569,26 +685,54 @@ export class SessionStorage {
       return cached
     }
 
-    const session = this.sessionById.get(sessionId)
+    const familyId = this.familySummaryById.has(sessionId)
+      ? sessionId
+      : (this.familyIdBySessionId.get(sessionId) ?? sessionId)
+    const familySummary = this.familySummaryById.get(familyId)
+    const requestedBranch = requestedBranchId
+      ? this.sessionById.get(requestedBranchId)
+      : this.familySummaryById.has(sessionId)
+        ? undefined
+        : this.sessionById.get(sessionId)
+    const branchId =
+      requestedBranch &&
+      this.familyIdBySessionId.get(requestedBranch.id) === familyId
+        ? requestedBranch.id
+        : (familySummary?.currentBranchId ?? familySummary?.id ?? sessionId)
+    const session = this.sessionById.get(branchId)
     if (!session) {
       logWarn('Session detail not found', { sessionId })
       return null
     }
 
+    const familyMembers = this.familyMembersById.get(familyId) ?? [session]
     const starredMessageIds = new Set(
-      (this.starsBySession.get(sessionId) ?? [])
-        .filter(star => !star.stale)
-        .map(star => star.messageId)
+      familyMembers.flatMap(member =>
+        (this.starsBySession.get(member.id) ?? [])
+          .filter(star => !star.stale)
+          .map(star => star.messageId)
+      )
     )
 
-    const messages = (this.messagesBySession.get(sessionId) ?? [])
-      .map(message => ({
+    const messages = (this.messagesBySession.get(branchId) ?? []).map(
+      message => ({
         ...message,
         userStarred: starredMessageIds.has(message.id)
-      }))
+      })
+    )
 
-    const detail = { ...session, messages }
-    this.setDetailCache(detail)
+    const branches = this.branchesByFamilyId.get(familyId)
+    const detail: SessionDetail = {
+      ...session,
+      familyId: branches && branches.length > 1 ? familyId : undefined,
+      currentBranchId: familySummary?.currentBranchId,
+      branchCount: branches?.length,
+      branches: branches && branches.length > 1 ? branches : undefined,
+      familyTokenUsage:
+        branches && branches.length > 1 ? familySummary?.tokenUsage : undefined,
+      messages
+    }
+    this.setDetailCache(cacheKey, detail)
     logInfo('Loaded session detail', {
       sessionId,
       messages: messages.length,
@@ -601,22 +745,35 @@ export class SessionStorage {
     const startedAt = performance.now()
 
     const rows: StarredMessageSummary[] = []
+    const seenFamilyMessages = new Set<string>()
     for (const star of this.store.stars.map(entry =>
       normalizeStarRecord(entry)
     )) {
-      const session = this.sessionById.get(star.sessionId)
-      if (!session) {
+      const familyId =
+        this.familyIdBySessionId.get(star.sessionId) ?? star.sessionId
+      const familySummary = this.familySummaryById.get(familyId)
+      const familyMembers = this.familyMembersById.get(familyId) ?? []
+      if (!familySummary) {
         continue
       }
-      const liveMessage = this.messageLookupBySession
-        .get(star.sessionId)
-        ?.get(star.messageId)
+      const dedupeKey = `${familyId}:${star.messageId}`
+      if (seenFamilyMessages.has(dedupeKey)) {
+        continue
+      }
+      seenFamilyMessages.add(dedupeKey)
+      const liveMember = familyMembers.find(member =>
+        this.messageLookupBySession.get(member.id)?.has(star.messageId)
+      )
+      const liveMessage = liveMember
+        ? this.messageLookupBySession.get(liveMember.id)?.get(star.messageId)
+        : undefined
       rows.push({
-        sessionId: star.sessionId,
+        sessionId: familyId,
+        branchId: liveMember?.id ?? star.sessionId,
         messageId: star.messageId,
-        sessionTitle: session.title,
-        sessionSource: session.source,
-        repoPath: session.repoPath,
+        sessionTitle: familySummary.title,
+        sessionSource: familySummary.source,
+        repoPath: familySummary.repoPath,
         role: liveMessage?.role ?? star.lastKnownRole,
         content: liveMessage?.content ?? star.lastKnownContent,
         timestamp: liveMessage?.timestamp ?? star.lastKnownTimestamp,
@@ -654,8 +811,11 @@ export class SessionStorage {
   }
 
   setArchived(sessionId: string, archived: boolean): SessionSummary | null {
-    const index = this.store.sessions.findIndex(row => row.id === sessionId)
-    if (index === -1) {
+    const familyId = this.familySummaryById.has(sessionId)
+      ? sessionId
+      : (this.familyIdBySessionId.get(sessionId) ?? sessionId)
+    const members = this.familyMembersById.get(familyId)
+    if (!members || members.length === 0) {
       logWarn('Cannot set archive state: session not found', {
         sessionId,
         archived
@@ -663,19 +823,26 @@ export class SessionStorage {
       return null
     }
 
-    const current = normalizeSessionSummary(this.store.sessions[index]!)
-    const next = normalizeSessionSummary({
-      ...current,
-      userArchived: archived,
-      userArchivedAt: archived ? new Date().toISOString() : undefined
-    })
-    this.store.sessions[index] = next
-    this.sessionById.set(sessionId, next)
-    this.refreshSessionSearchIndex(sessionId)
-    this.detailCache.delete(sessionId)
+    const now = new Date().toISOString()
+    const memberIds = new Set(members.map(member => member.id))
+    this.store.sessions = this.store.sessions.map(current =>
+      memberIds.has(current.id)
+        ? normalizeSessionSummary({
+            ...current,
+            userArchived: archived,
+            userArchivedAt: archived ? now : undefined
+          })
+        : current
+    )
+    this.rebuildDerivedState()
     this.persist()
-    logInfo('Updated session archive state', { sessionId, archived })
-    return next
+    logInfo('Updated session family archive state', {
+      sessionId,
+      familyId,
+      branches: members.length,
+      archived
+    })
+    return this.familySummaryById.get(familyId) ?? null
   }
 
   setMessageStarred(
@@ -683,7 +850,15 @@ export class SessionStorage {
     messageId: string,
     starred: boolean
   ): MessageStarRecord | null {
-    const session = this.store.sessions.find(row => row.id === sessionId)
+    const familyId = this.familySummaryById.has(sessionId)
+      ? sessionId
+      : (this.familyIdBySessionId.get(sessionId) ?? sessionId)
+    const familyMembers = this.familyMembersById.get(familyId) ?? []
+    const session =
+      this.sessionById.get(sessionId) ??
+      familyMembers.find(member =>
+        this.messageLookupBySession.get(member.id)?.has(messageId)
+      )
     if (!session) {
       logWarn('Cannot update message star state: session not found', {
         sessionId,
@@ -693,19 +868,35 @@ export class SessionStorage {
       return null
     }
 
-    const index = this.store.stars.findIndex(
-      entry => entry.sessionId === sessionId && entry.messageId === messageId
-    )
+    const familySessionIds = new Set(familyMembers.map(member => member.id))
+    const matchingIndexes = this.store.stars
+      .map((entry, index) => ({ entry, index }))
+      .filter(
+        item =>
+          familySessionIds.has(item.entry.sessionId) &&
+          item.entry.messageId === messageId
+      )
+    const index = matchingIndexes[0]?.index ?? -1
     const now = new Date().toISOString()
-    const liveMessage = this.store.messages.find(
-      message => message.sessionId === sessionId && message.id === messageId
-    )
+    const liveSession =
+      familyMembers.find(member =>
+        this.messageLookupBySession.get(member.id)?.has(messageId)
+      ) ?? session
+    const liveMessage = this.messageLookupBySession
+      .get(liveSession.id)
+      ?.get(messageId)
 
     if (!starred) {
       if (index === -1) {
         return null
       }
-      this.store.stars.splice(index, 1)
+      this.store.stars = this.store.stars.filter(
+        entry =>
+          !(
+            familySessionIds.has(entry.sessionId) &&
+            entry.messageId === messageId
+          )
+      )
       this.rebuildDerivedState()
       this.detailCache.delete(sessionId)
       this.persist()
@@ -722,7 +913,7 @@ export class SessionStorage {
     }
 
     const next = normalizeStarRecord({
-      sessionId,
+      sessionId: liveSession.id,
       messageId,
       createdAt: index >= 0 ? this.store.stars[index]!.createdAt : now,
       updatedAt: now,
@@ -740,7 +931,14 @@ export class SessionStorage {
     })
 
     if (index >= 0) {
-      this.store.stars[index] = next
+      this.store.stars = this.store.stars.filter(
+        entry =>
+          !(
+            familySessionIds.has(entry.sessionId) &&
+            entry.messageId === messageId
+          )
+      )
+      this.store.stars.push(next)
     } else {
       this.store.stars.push(next)
     }

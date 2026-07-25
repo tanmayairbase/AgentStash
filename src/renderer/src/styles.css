@@ -528,6 +528,16 @@ button:hover {
   line-height: 1.2;
 }
 
+.session-branch-badge {
+  color: var(--text-accent-soft);
+  white-space: nowrap;
+}
+
+.session-branch-match {
+  color: var(--accent-warning);
+  white-space: nowrap;
+}
+
 .session-cost-chip {
   flex: 0 0 auto;
   border: 1px solid var(--border-default);
@@ -904,6 +914,19 @@ button:hover {
   font-size: 12px;
 }
 
+.token-tooltip__scope {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.token-tooltip__family {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
 .detail-title-wrap {
   min-width: 0;
   width: 100%;
@@ -932,6 +955,30 @@ button:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.detail-branch-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.detail-branch-picker select {
+  min-width: 0;
+  max-width: min(620px, 100%);
+  border: 1px solid var(--border-default);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+  padding: 5px 28px 5px 8px;
+  color: var(--text-secondary);
+}
+
+.detail-branch-picker select:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
 }
 
 .detail-meta {

@@ -20,7 +20,8 @@ import {
   formatMinuteKeyIST,
   formatSessionOrigin,
   formatTimestampIST,
-  normalizeModelLabel
+  normalizeModelLabel,
+  toSearchPreview
 } from '@shared/format'
 import { TokenUsageBarWithTooltip } from './TokenUsageBarWithTooltip'
 import { MermaidDiagram } from './MermaidDiagram'
@@ -136,7 +137,10 @@ const renderMarkdownContent = (content: string): string =>
 // diagrams. The HTML chunks stay a single dangerouslySetInnerHTML, while each
 // diagram becomes a <MermaidDiagram> that owns its own async SVG.
 const toContentParts = (html: string): ContentPart[] => {
-  if (typeof document === 'undefined' || !html.includes(MERMAID_DIAGRAM_CLASS)) {
+  if (
+    typeof document === 'undefined' ||
+    !html.includes(MERMAID_DIAGRAM_CLASS)
+  ) {
     return [{ kind: 'html', html }]
   }
 
@@ -247,6 +251,7 @@ interface Props {
     messageId: string,
     starred: boolean
   ) => Promise<void> | void
+  onSelectBranch?: (branchId: string) => void
   focusMessageId?: string | null
   onFocusedMessageConsumed?: () => void
 }
@@ -273,6 +278,16 @@ const toFileLabel = (path: string): string => {
 
 const formatExecutionMode = (mode: SessionExecutionMode): string =>
   mode === 'autopilot' ? 'Autopilot' : 'Plan'
+
+const formatBranchLabel = (
+  branch: NonNullable<SessionDetail['branches']>[number]
+): string => {
+  const status = branch.isCurrent ? 'Current' : 'Older'
+  const prompt = branch.divergencePrompt
+    ? ` - ${toSearchPreview(branch.divergencePrompt, 56)}`
+    : ''
+  return `${status} - ${formatTimestampIST(branch.updatedAt)}${prompt}`
+}
 
 const groupMessagesByMinute = (messages: SessionMessage[]): MessageGroup[] => {
   const groups: MessageGroup[] = []
@@ -365,6 +380,7 @@ export const SessionDetailView = ({
   theme = 'dark',
   onCopySessionId,
   onToggleMessageStar,
+  onSelectBranch,
   focusMessageId,
   onFocusedMessageConsumed
 }: Props) => {
@@ -567,6 +583,22 @@ export const SessionDetailView = ({
       <header className="detail-header">
         <div className="detail-title-wrap">
           <h2 title={detail.title}>{detail.title}</h2>
+          {detail.branches && detail.branches.length > 1 ? (
+            <label className="detail-branch-picker">
+              <span>Branch</span>
+              <select
+                aria-label="Conversation branch"
+                value={detail.id}
+                onChange={event => onSelectBranch?.(event.target.value)}
+              >
+                {detail.branches.map(branch => (
+                  <option key={branch.id} value={branch.id}>
+                    {formatBranchLabel(branch)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <div className="detail-meta">
             <span>Origin: {formatSessionOrigin(detail.source)}</span>
             {detail.agent ? <span>Agent: {detail.agent}</span> : null}
@@ -606,6 +638,7 @@ export const SessionDetailView = ({
             } satisfies SessionTokenUsage)
           }
           modelLabel={normalizeModelLabel(detail.model)}
+          familyUsage={detail.familyTokenUsage}
         />
       </header>
 
@@ -634,7 +667,9 @@ export const SessionDetailView = ({
             >
               <div className="message-header">
                 <div className="message-role">
-                  {message.role === 'user' ? 'You' : formatAgentName(detail.source)}
+                  {message.role === 'user'
+                    ? 'You'
+                    : formatAgentName(detail.source)}
                   {message.role === 'user' && message.mode ? (
                     <span
                       className={`message-mode-pill message-mode-pill-${message.mode}`}

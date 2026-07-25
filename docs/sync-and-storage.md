@@ -8,18 +8,19 @@ Primary files:
 
 - `src/main/sync.ts`
 - `src/main/parsers/index.ts`
+- `src/main/session-families.ts`
 - `src/main/opencode.ts`
 - `src/main/storage.ts`
 
 ## Inputs
 
-| Source | Input | Notes |
-| --- | --- | --- |
-| Copilot CLI artifacts | repo roots + `~/.copilot/session-state/**` JSON/JSONL | transcript-oriented |
-| Copilot CLI summaries | `~/.copilot/session-store.db` | improves titles and cache invalidation |
-| VS Code Copilot Chat | workspace storage chat session JSONL | repo path inferred from workspace metadata when possible |
-| OpenCode | `~/.local/share/opencode/opencode.db` | loaded from SQLite tables |
-| Claude Code | `~/.claude/projects/**/*.jsonl` | repo path inferred from each line's `cwd`, falling back to the configured repo root |
+| Source                | Input                                                 | Notes                                                                               |
+| --------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Copilot CLI artifacts | repo roots + `~/.copilot/session-state/**` JSON/JSONL | transcript-oriented                                                                 |
+| Copilot CLI summaries | `~/.copilot/session-store.db`                         | improves titles and cache invalidation                                              |
+| VS Code Copilot Chat  | workspace storage chat session JSONL                  | repo path inferred from workspace metadata when possible                            |
+| OpenCode              | `~/.local/share/opencode/opencode.db`                 | loaded from SQLite tables                                                           |
+| Claude Code           | `~/.claude/projects/**/*.jsonl`                       | repo path inferred from each line's `cwd`, falling back to the configured repo root |
 
 ## Sync flow
 
@@ -109,6 +110,7 @@ Important normalized fields:
 - transcript messages
 - optional references/edits
 - optional CLI execution mode metadata (`plan`, `autopilot`)
+- optional Claude lineage UUIDs and API message-level usage events
 
 ## Parsing
 
@@ -136,9 +138,26 @@ The Claude Code parser:
 
 - reads `~/.claude/projects/**/*.jsonl`, always tagging sessions with source `claude`
 - extracts user/assistant text and thinking blocks from content blocks
-- maps `permissionMode` to `plan`/`autopilot` execution mode
+- maps only Claude's explicit `plan` permission mode
 - reconstructs `AskUserQuestion` tool calls and their answers from tool_result text
-- aggregates per-model token usage (`claude-messages` token usage source)
+- records message UUID/`parentUuid` lineage for rewind and fork detection
+- deduplicates token usage by API `message.id` before aggregating per-model totals
+- uses the earliest valid event timestamp even when title metadata is untimestamped
+
+### Claude conversation families
+
+Primary file:
+
+- `src/main/session-families.ts`
+
+Top-level Claude files are grouped when they share an exact message UUID or when
+one file's `parentUuid` resolves to a message in another file. Grouping is
+transitive. Subagent/sidechain files are excluded.
+
+The raw sessions remain persisted as reversible file-backed branches. List,
+search, and stats expose one logical conversation using the newest meaningful
+branch, while detail responses retain every branch and family-level,
+message-ID-deduplicated usage.
 
 ### OpenCode
 
@@ -165,9 +184,11 @@ Important merge semantics:
 - synced sessions are retained locally
 - sessions missing upstream are marked, not immediately deleted
 - manual archiving is local-only
+- archiving a Claude conversation family updates every branch
 - manual archives can auto-unarchive if upstream activity changes
 - old manually archived sessions are pruned after four months
 - starred messages can survive as stale local bookmarks if the upstream message disappears
+- stars on UUID-identical inherited messages are shared across Claude branches
 
 ## Local store
 
@@ -187,10 +208,11 @@ It contains:
 `SessionStorage` rebuilds and uses:
 
 - session lookup by ID
+- Claude family and branch lookup
 - messages by session
 - message lookup by session
 - stars by session
-- lowercased per-session search haystacks
+- lowercased per-family search haystacks
 - a small detail LRU cache
 
 These indexes keep list/detail queries cheap without reparsing or rejoining everything on every request.
@@ -206,7 +228,9 @@ Search currently matches over:
 - model
 - message content
 
-The model is intentionally simple: prebuilt lowercase haystacks with local substring matching.
+The model is intentionally simple: prebuilt lowercase haystacks with local
+substring matching. Claude family haystacks include every branch; a match records
+the newest matching branch so the renderer can open the relevant transcript.
 
 ## Performance tactics already in place
 
@@ -219,19 +243,18 @@ The model is intentionally simple: prebuilt lowercase haystacks with local subst
 
 ## Where to change things
 
-| Change | Primary file(s) |
-| --- | --- |
-| add/change config fields | `src/main/config.ts`, `src/shared/types.ts` |
-| change discovery rules | `src/main/sync.ts` |
-| change parsing behavior | `src/main/parsers/index.ts` |
-| change Claude Code ingestion | `src/main/parsers/claude.ts` |
-| change OpenCode ingestion | `src/main/opencode.ts` |
-| change retention/archive/star semantics | `src/main/storage.ts` |
-| change search indexing | `src/main/storage.ts` |
+| Change                                  | Primary file(s)                             |
+| --------------------------------------- | ------------------------------------------- |
+| add/change config fields                | `src/main/config.ts`, `src/shared/types.ts` |
+| change discovery rules                  | `src/main/sync.ts`                          |
+| change parsing behavior                 | `src/main/parsers/index.ts`                 |
+| change Claude Code ingestion            | `src/main/parsers/claude.ts`                |
+| change OpenCode ingestion               | `src/main/opencode.ts`                      |
+| change retention/archive/star semantics | `src/main/storage.ts`                       |
+| change search indexing                  | `src/main/storage.ts`                       |
 
 ## Key tradeoff
 
 The app currently prefers a simple local JSON store plus in-memory indexes over an embedded app database.
 
 That keeps packaging simple, but means scalability depends on careful caching, indexing, and rendering limits.
-

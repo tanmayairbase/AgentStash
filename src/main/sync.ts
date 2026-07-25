@@ -26,7 +26,7 @@ const MAX_FILE_SIZE_BYTES = 64 * 1024 * 1024
 // instead of served from the mtime/size-keyed artifact cache. 16: Claude
 // sessions never map to autopilot (Claude Code has no such mode); only plan
 // mode is surfaced.
-const ARTIFACT_CACHE_PARSER_VERSION = 16
+const ARTIFACT_CACHE_PARSER_VERSION = 17
 
 const expandHome = (value: string): string =>
   value.startsWith('~/') ? join(homedir(), value.slice(2)) : value
@@ -48,9 +48,7 @@ const artifactDiscoveryIgnore = [
 
 const normalizeGlobPath = (value: string): string => value.replace(/\\/g, '/')
 
-export const getGlobalCopilotPattern = (
-  home: string = homedir()
-): string => {
+export const getGlobalCopilotPattern = (home: string = homedir()): string => {
   const normalizedHome = normalizeGlobPath(home)
   return `${normalizedHome}/.copilot/session-state/**/*.{json,jsonl}`
 }
@@ -106,7 +104,10 @@ export const getAutoDiscoveredPatterns = (
   home: string = homedir(),
   appData: string = process.env.APPDATA || home
 ): AutoDiscoveredPatternInfo[] => [
-  { label: 'Copilot CLI session history', pattern: getGlobalCopilotPattern(home) },
+  {
+    label: 'Copilot CLI session history',
+    pattern: getGlobalCopilotPattern(home)
+  },
   {
     label: 'VS Code Copilot Chat sessions',
     pattern: getGlobalVsCodeChatPattern(platform, home, appData)
@@ -142,7 +143,10 @@ const shouldIncludeArtifact = (
   if (isWithinRepoRoots(artifact.session.repoPath, repoRoots)) {
     return true
   }
-  return artifact.session.source === 'cli' && isCopilotChatCwd(artifact.session.repoPath)
+  return (
+    artifact.session.source === 'cli' &&
+    isCopilotChatCwd(artifact.session.repoPath)
+  )
 }
 
 const repoRootFromVsCodeWorkspaceStorage = async (
@@ -325,58 +329,62 @@ export const syncSessions = async (
   const files = new Set<string>()
   const scanStartedAt = performance.now()
 
-  const [repoRootEntries, globalEntries, globalVsCodeEntries, globalClaudeCodeEntries] =
-    await Promise.all([
-      Promise.all(
-        repoRoots.map(async root => {
-          try {
-            const stat = await fs.stat(root)
-            if (!stat.isDirectory()) {
-              logWarn('Configured repo root is not a directory, skipping', {
-                root
-              })
-              return []
-            }
-          } catch (error) {
-            logWarn('Configured repo root does not exist, skipping', {
-              root,
-              reason: (error as Error).message
+  const [
+    repoRootEntries,
+    globalEntries,
+    globalVsCodeEntries,
+    globalClaudeCodeEntries
+  ] = await Promise.all([
+    Promise.all(
+      repoRoots.map(async root => {
+        try {
+          const stat = await fs.stat(root)
+          if (!stat.isDirectory()) {
+            logWarn('Configured repo root is not a directory, skipping', {
+              root
             })
             return []
           }
-
-          const rootEntries = await fg(patterns, {
-            cwd: root,
-            absolute: true,
-            onlyFiles: true,
-            suppressErrors: true,
-            unique: true,
-            ignore: artifactDiscoveryIgnore
+        } catch (error) {
+          logWarn('Configured repo root does not exist, skipping', {
+            root,
+            reason: (error as Error).message
           })
-          logInfo('Scanned repo root', { root, filesFound: rootEntries.length })
-          return rootEntries
+          return []
+        }
+
+        const rootEntries = await fg(patterns, {
+          cwd: root,
+          absolute: true,
+          onlyFiles: true,
+          suppressErrors: true,
+          unique: true,
+          ignore: artifactDiscoveryIgnore
         })
-      ),
-      fg(globalCopilotPattern, {
-        absolute: true,
-        onlyFiles: true,
-        suppressErrors: true,
-        unique: true,
-        ignore: ['**/node_modules/**', '**/.git/**']
-      }),
-      fg(globalVsCodeChatPattern, {
-        absolute: true,
-        onlyFiles: true,
-        suppressErrors: true,
-        unique: true
-      }),
-      fg(globalClaudeCodePattern, {
-        absolute: true,
-        onlyFiles: true,
-        suppressErrors: true,
-        unique: true
+        logInfo('Scanned repo root', { root, filesFound: rootEntries.length })
+        return rootEntries
       })
-    ])
+    ),
+    fg(globalCopilotPattern, {
+      absolute: true,
+      onlyFiles: true,
+      suppressErrors: true,
+      unique: true,
+      ignore: ['**/node_modules/**', '**/.git/**']
+    }),
+    fg(globalVsCodeChatPattern, {
+      absolute: true,
+      onlyFiles: true,
+      suppressErrors: true,
+      unique: true
+    }),
+    fg(globalClaudeCodePattern, {
+      absolute: true,
+      onlyFiles: true,
+      suppressErrors: true,
+      unique: true
+    })
+  ])
 
   for (const rootEntries of repoRootEntries) {
     for (const entry of rootEntries) {

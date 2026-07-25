@@ -27,8 +27,12 @@ interface Props {
   starredMessages: StarredMessageSummary[]
   archivedSearchMatches: SessionSummary[]
   selectedId: string | null
-  onSelect: (id: string) => void
-  onSelectStarredMessage: (sessionId: string, messageId: string) => void
+  onSelect: (id: string, branchId?: string) => void
+  onSelectStarredMessage: (
+    sessionId: string,
+    messageId: string,
+    branchId?: string
+  ) => void
   onSetArchived: (sessionId: string, archived: boolean) => void
   query: string
   onQueryChange: (query: string) => void
@@ -456,12 +460,10 @@ export const SessionListSidebar = ({
     setOpenMenu(current => (current === menu ? null : menu))
   }
   const toggleFilters = (): void => {
-    setFiltersExpanded(current => {
-      if (current) {
-        setOpenMenu(null)
-      }
-      return !current
-    })
+    if (filtersExpanded) {
+      setOpenMenu(null)
+    }
+    setFiltersExpanded(!filtersExpanded)
   }
   const clearFilters = (): void => {
     onClearFilters()
@@ -485,7 +487,12 @@ export const SessionListSidebar = ({
       <button
         key={session.id}
         className={`session-item ${isActive ? 'active' : ''} ${isArchived ? 'archived' : ''}`}
-        onClick={() => onSelect(session.id)}
+        onClick={() =>
+          onSelect(
+            session.id,
+            session.searchMatchBranchId ?? session.currentBranchId ?? session.id
+          )
+        }
         onContextMenu={event => {
           event.preventDefault()
           setContextMenu({
@@ -505,6 +512,17 @@ export const SessionListSidebar = ({
             <span className="session-archived-badge">Archived</span>
           )}
           <span>{formatSessionOrigin(session.source)}</span>
+          {(session.branchCount ?? 0) > 1 && (
+            <span className="session-branch-badge">
+              {session.branchCount} branches
+            </span>
+          )}
+          {session.searchMatchBranchId &&
+            session.searchMatchBranchId !== session.currentBranchId && (
+              <span className="session-branch-match">
+                Match in older branch
+              </span>
+            )}
           <span>{formatTimestampIST(session.updatedAt)}</span>
         </div>
         <div className="session-path">
@@ -731,7 +749,11 @@ export const SessionListSidebar = ({
                     type="button"
                     className={`starred-item ${star.stale ? 'stale' : ''}`}
                     onClick={() =>
-                      onSelectStarredMessage(star.sessionId, star.messageId)
+                      onSelectStarredMessage(
+                        star.sessionId,
+                        star.messageId,
+                        star.branchId
+                      )
                     }
                   >
                     <div className="starred-item-top">
