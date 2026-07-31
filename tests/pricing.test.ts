@@ -123,6 +123,17 @@ describe('priceFor', () => {
 })
 
 describe('priceForClaudeCodeModel', () => {
+  it('returns the published Claude Opus 5 rate', () => {
+    expect(priceForClaudeCodeModel('claude-opus-5')).toEqual({
+      provider: 'anthropic',
+      input: 5,
+      cachedInput: 0.5,
+      cacheWrite: 6.25,
+      cacheWrite1h: 10,
+      output: 25
+    })
+  })
+
   it('returns the Claude Code list-price rate for claude-opus-4-8, distinct from the Copilot rate table', () => {
     expect(priceForClaudeCodeModel('claude-opus-4-8')).toEqual({
       provider: 'anthropic',
@@ -394,6 +405,25 @@ describe('sessionEstimatedCost', () => {
     )
     // expected = (1000*5 + 1000*6.25 + 1000*10) / 1e6 = 21250 / 1e6 = 0.02125
     expect(cost).toBeCloseTo(0.02125, 8)
+  })
+
+  it('prices Claude Opus 5 session usage', () => {
+    const cost = sessionEstimatedCost(
+      usage(
+        [
+          modelUsage({
+            modelId: 'claude-opus-5',
+            inputTokens: 276,
+            cachedInputTokens: 14_950_126,
+            cacheWrite1hTokens: 175_097,
+            outputTokens: 67_459
+          })
+        ],
+        'claude-messages'
+      )
+    )
+
+    expect(cost).toBeCloseTo(10.913888, 6)
   })
 })
 

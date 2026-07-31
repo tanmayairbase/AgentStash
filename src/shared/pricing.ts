@@ -249,6 +249,14 @@ const CLAUDE_CODE_RATES: Record<string, ModelRate> = {
     cacheWrite1h: 20,
     output: 50
   },
+  'claude-opus-5': {
+    provider: 'anthropic',
+    input: 5,
+    cachedInput: 0.5,
+    cacheWrite: 6.25,
+    cacheWrite1h: 10,
+    output: 25
+  },
   'claude-opus-4-8': {
     provider: 'anthropic',
     input: 5,
