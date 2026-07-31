@@ -60,6 +60,13 @@ const aggregateUsageEvents = (
   )
 }
 
+const aggregateUsageIncludingSubagents = (
+  sessions: SessionSummary[],
+  subagents: SessionSummary[]
+): SessionTokenUsage | undefined => {
+  return aggregateUsageEvents([...sessions, ...subagents])
+}
+
 const buildBranchSummaries = (
   members: SessionSummary[],
   messagesBySession: ReadonlyMap<string, SessionMessage[]>,
@@ -163,6 +170,19 @@ export const buildSessionFamilyIndex = (
   const membersByFamilyId = new Map<string, SessionSummary[]>()
   const familyIdBySessionId = new Map<string, string>()
   const branchesByFamilyId = new Map<string, SessionBranchSummary[]>()
+  const subagentsByParentSessionId = new Map<string, SessionSummary[]>()
+  for (const session of sessions) {
+    if (
+      session.source !== 'claude' ||
+      !session.isSubagentSession ||
+      !session.parentSessionId
+    ) {
+      continue
+    }
+    const subagents = subagentsByParentSessionId.get(session.parentSessionId) ?? []
+    subagents.push(session)
+    subagentsByParentSessionId.set(session.parentSessionId, subagents)
+  }
 
   for (const members of grouped.values()) {
     const current = members.slice().sort(compareNewest)[0]!
@@ -176,9 +196,13 @@ export const buildSessionFamilyIndex = (
       current.id
     )
     const isFamily = members.length > 1
-    const familyUsage = isFamily
-      ? aggregateUsageEvents(members)
-      : current.tokenUsage
+    const subagents = members.flatMap(
+      member => subagentsByParentSessionId.get(member.id) ?? []
+    )
+    const familyUsage =
+      isFamily || subagents.length > 0
+        ? aggregateUsageIncludingSubagents(members, subagents)
+        : current.tokenUsage
     const summary: SessionSummary = isFamily
       ? {
           ...current,
@@ -201,7 +225,9 @@ export const buildSessionFamilyIndex = (
           ),
           tokenUsage: familyUsage
         }
-      : current
+      : subagents.length > 0
+        ? { ...current, tokenUsage: familyUsage }
+        : current
 
     summaries.push(summary)
     membersByFamilyId.set(familyId, members)

@@ -19,7 +19,7 @@ export function TokenUsageBarWithTooltip({
       <TokenUsageBar usage={usage} modelLabel={modelLabel} />
       <div className="token-usage-bar-tooltip" role="presentation">
         {familyUsage ? (
-          <div className="token-tooltip__scope">Selected branch</div>
+          <div className="token-tooltip__scope">Current session</div>
         ) : null}
         <TokenUsageTooltipContent usage={usage} />
         {familyUsage ? (

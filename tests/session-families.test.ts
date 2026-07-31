@@ -195,4 +195,55 @@ describe('Claude session families', () => {
       storage.getSessionDetail(family!.id, 'branch-new')?.userArchived
     ).toBe(true)
   })
+
+  it('includes file-backed subagent usage in its parent conversation total', async () => {
+    const tempDir = await fs.mkdtemp(join(tmpdir(), 'agentstash-subagent-'))
+    const storage = new SessionStorage(join(tempDir, 'sessions-store.json'))
+    const parent = insert(
+      'parent-session',
+      '2026-07-24T10:00:00.000Z',
+      '2026-07-24T10:05:00.000Z',
+      ['parent-message'],
+      [
+        {
+          id: 'parent-message',
+          sessionId: 'parent-session',
+          role: 'user',
+          content: 'Investigate the issue',
+          format: 'text',
+          timestamp: '2026-07-24T10:00:00.000Z'
+        }
+      ],
+      [usageEvent('parent-api-call', 10)]
+    )
+    const subagent = insert(
+      'subagent-session',
+      '2026-07-24T10:01:00.000Z',
+      '2026-07-24T10:04:00.000Z',
+      ['subagent-message'],
+      [
+        {
+          id: 'subagent-message',
+          sessionId: 'subagent-session',
+          role: 'assistant',
+          content: 'Investigation complete',
+          format: 'text',
+          timestamp: '2026-07-24T10:04:00.000Z'
+        }
+      ],
+      [usageEvent('subagent-api-call', 20)]
+    )
+    subagent.session.isSubagentSession = true
+    subagent.session.parentSessionId = parent.session.id
+
+    storage.mergeFromSync([parent, subagent], '2026-07-24T11:00:00.000Z')
+
+    const listed = storage.list('')
+    expect(listed).toHaveLength(2)
+    expect(listed.find(session => session.id === parent.session.id)?.tokenUsage?.totals.inputTokens).toBe(30)
+
+    const detail = storage.getSessionDetail(parent.session.id)
+    expect(detail?.tokenUsage?.totals.inputTokens).toBe(10)
+    expect(detail?.familyTokenUsage?.totals.inputTokens).toBe(30)
+  })
 })

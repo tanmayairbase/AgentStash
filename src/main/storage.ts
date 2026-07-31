@@ -743,13 +743,17 @@ export class SessionStorage {
     )
 
     const isFamily = family.branches.length > 1
+    const hasAggregatedUsage =
+      family.summary.tokenUsage !== family.branch.tokenUsage
     const detail: SessionDetail = {
       ...family.branch,
       familyId: isFamily ? family.familyId : undefined,
       currentBranchId: family.summary.currentBranchId,
       branchCount: family.branches.length,
       branches: isFamily ? family.branches : undefined,
-      familyTokenUsage: isFamily ? family.summary.tokenUsage : undefined,
+      familyTokenUsage: hasAggregatedUsage
+        ? family.summary.tokenUsage
+        : undefined,
       messages
     }
     this.setDetailCache(cacheKey, detail)

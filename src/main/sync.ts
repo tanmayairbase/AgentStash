@@ -23,10 +23,9 @@ import {
 
 const MAX_FILE_SIZE_BYTES = 64 * 1024 * 1024
 // Bump whenever parser output changes so already-synced files are re-parsed
-// instead of served from the mtime/size-keyed artifact cache. 16: Claude
-// sessions never map to autopilot (Claude Code has no such mode); only plan
-// mode is surfaced.
-const ARTIFACT_CACHE_PARSER_VERSION = 17
+// instead of served from the mtime/size-keyed artifact cache. 20: file-backed
+// Claude subagent logs receive unique IDs even when an agentId is absent.
+const ARTIFACT_CACHE_PARSER_VERSION = 20
 
 const expandHome = (value: string): string =>
   value.startsWith('~/') ? join(homedir(), value.slice(2)) : value

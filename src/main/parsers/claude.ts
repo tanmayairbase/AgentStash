@@ -232,6 +232,19 @@ const collectClaudeUsageEvents = (
   return [...eventsById.values()]
 }
 
+const parentClaudeSessionIdFromPath = (filePath: string): string | null => {
+  const normalizedPath = filePath.replaceAll('\\', '/')
+  const subagentMarker = '/subagents/'
+  const markerIndex = normalizedPath.lastIndexOf(subagentMarker)
+  if (markerIndex === -1) {
+    return null
+  }
+
+  const parentDirectory = normalizedPath.slice(0, markerIndex)
+  const parentId = basename(parentDirectory)
+  return parentId || null
+}
+
 export const parseClaudeCodeSessionLog = (
   raw: string,
   context: ParseContext
@@ -241,9 +254,18 @@ export const parseClaudeCodeSessionLog = (
     return []
   }
 
-  const sessionId =
+  const loggedSessionId =
     firstString(lines.find(line => line.sessionId)?.sessionId) ??
     basename(context.filePath, extname(context.filePath))
+  const parentSessionId = parentClaudeSessionIdFromPath(context.filePath)
+  const isFileBackedSubagent = Boolean(parentSessionId)
+  const subagentId =
+    firstString(lines.find(line => line.agentId)?.agentId) ??
+    basename(context.filePath, extname(context.filePath))
+  const sessionId =
+    isFileBackedSubagent && subagentId
+      ? stableId('claude-subagent', parentSessionId!, subagentId)
+      : loggedSessionId
 
   const repoPath =
     firstString(lines.find(line => line.cwd)?.cwd) ?? context.repoRoot
@@ -327,9 +349,8 @@ export const parseClaudeCodeSessionLog = (
   const lineageParentMessageIds = [
     ...new Set(lineageLines.map(line => line.parentUuid).filter(Boolean))
   ] as string[]
-  const normalizedFilePath = context.filePath.replaceAll('\\', '/')
   const isSubagentSession =
-    normalizedFilePath.includes('/subagents/') ||
+    isFileBackedSubagent ||
     lines.some(line => line.isSidechain === true || Boolean(line.agentId))
 
   const session: SessionSummary = {
@@ -339,6 +360,7 @@ export const parseClaudeCodeSessionLog = (
     title: titleSeed.slice(0, 120),
     model: lastModel,
     isSubagentSession,
+    parentSessionId,
     modes: modes.length > 0 ? modes : undefined,
     latestMode: modes.at(-1) ?? null,
     createdAt,

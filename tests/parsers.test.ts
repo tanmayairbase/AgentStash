@@ -1100,6 +1100,45 @@ describe('Claude Code sessions', () => {
     })
   })
 
+  it('links a file-backed subagent log to its enclosing Claude session', () => {
+    const raw = [
+      JSON.stringify({
+        type: 'user',
+        uuid: 'subagent-u1',
+        message: { role: 'user', content: 'Investigate the issue.' },
+        timestamp: '2026-01-01T10:00:00.000Z',
+        cwd: '/tmp/repo-claude',
+        sessionId: 'subagent-session'
+      }),
+      JSON.stringify({
+        type: 'assistant',
+        uuid: 'subagent-a1',
+        message: {
+          role: 'assistant',
+          model: 'claude-sonnet-4-6',
+          content: [{ type: 'text', text: 'Investigation complete.' }]
+        },
+        timestamp: '2026-01-01T10:00:05.000Z',
+        cwd: '/tmp/repo-claude',
+        sessionId: 'subagent-session'
+      })
+    ].join('\n')
+
+    const parsed = parseSessionArtifacts(raw, {
+      filePath:
+        '/Users/me/.claude/projects/-tmp-repo-claude/session-parent/subagents/subagent-session.jsonl',
+      repoRoot: '/tmp/repo-claude',
+      source: 'claude'
+    })
+
+    expect(parsed[0].session).toMatchObject({
+      isSubagentSession: true,
+      parentSessionId: 'session-parent'
+    })
+    expect(parsed[0].session.id).not.toBe('session-parent')
+    expect(parsed[0].session.id).not.toBe('subagent-session')
+  })
+
   it('skips a "user" turn whose content is only a tool_result block', () => {
     const raw = [
       JSON.stringify({
