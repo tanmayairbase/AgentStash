@@ -687,7 +687,8 @@ export class SessionStorage {
               right.messageCount - left.messageCount ||
               left.id.localeCompare(right.id)
           )[0]
-        return matchingBranch
+        const currentBranchId = session.currentBranchId ?? session.id
+        return matchingBranch && matchingBranch.id !== currentBranchId
           ? { ...session, searchMatchBranchId: matchingBranch.id }
           : session
       })

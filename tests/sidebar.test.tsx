@@ -227,6 +227,19 @@ describe('SessionListSidebar', () => {
     expect(screen.getByText('Match in older branch')).toBeTruthy()
   })
 
+  it('does not show an older-branch match for a single-branch session', () => {
+    renderSidebar({
+      sessions: [
+        {
+          ...sessions[0],
+          searchMatchBranchId: sessions[0].id
+        }
+      ],
+      query: 'older prompt'
+    })
+    expect(screen.queryByText('Match in older branch')).toBeNull()
+  })
+
   it('does not show mode badges in session rows', () => {
     renderSidebar()
     expect(screen.queryByText('Plan')).toBeNull()

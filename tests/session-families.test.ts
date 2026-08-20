@@ -166,6 +166,9 @@ describe('Claude session families', () => {
       searchMatchBranchId: 'branch-old'
     })
 
+    const independentSearch = storage.list('Independent conversation')
+    expect(independentSearch[0]).not.toHaveProperty('searchMatchBranchId')
+
     const currentDetail = storage.getSessionDetail(family!.id)
     expect(currentDetail?.id).toBe('branch-new')
     expect(currentDetail?.branches).toHaveLength(2)

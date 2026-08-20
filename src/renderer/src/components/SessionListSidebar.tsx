@@ -524,8 +524,7 @@ export const SessionListSidebar = ({
               <BranchIcon />
             </span>
           )}
-          {session.searchMatchBranchId &&
-            session.searchMatchBranchId !== session.currentBranchId && (
+          {(session.branchCount ?? 0) > 1 && session.searchMatchBranchId && (
               <span className="session-branch-match">
                 Match in older branch
               </span>
