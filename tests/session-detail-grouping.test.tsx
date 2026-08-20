@@ -113,7 +113,7 @@ describe('SessionDetailView grouping', () => {
 
     const assistantBubbles = screen.getAllByLabelText('assistant message')
     expect(assistantBubbles).toHaveLength(2)
-    expect(screen.getByText('Origin: CLI')).toBeTruthy()
+    expect(screen.getByText('Origin: Copilot CLI')).toBeTruthy()
     expect(screen.getByText('Agent: security-upgrade-agent')).toBeTruthy()
     expect(screen.getByText('Model: gpt-5.3-codex')).toBeTruthy()
     expect(screen.getByText('index.tsx:48-52')).toBeTruthy()
