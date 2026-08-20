@@ -91,6 +91,25 @@ const mapClaudePermissionMode = (
 const extractClaudeThinkingBlocks = (content: unknown): string =>
   extractClaudeBlocksOfType(content, 'thinking')
 
+const extractClaudeCommandTitle = (value: string): string | null => {
+  const commandName = value.match(
+    /<command-name>\s*(\/[^<]+?)\s*<\/command-name>/i
+  )?.[1]
+  if (commandName?.trim()) {
+    return commandName.trim()
+  }
+
+  const commandMessage = value.match(
+    /<command-message>\s*([^<]+?)\s*<\/command-message>/i
+  )?.[1]
+  if (!commandMessage?.trim()) {
+    return null
+  }
+
+  const command = commandMessage.trim()
+  return command.startsWith('/') ? command : `/${command}`
+}
+
 // A tool_result's `content` is either a plain string or an array of content
 // blocks (e.g. [{ type: 'text', text: '...' }]) — both shapes occur in real
 // Claude Code logs, so both need to resolve to the same flattened text here.
@@ -328,10 +347,15 @@ export const parseClaudeCodeSessionLog = (
   const aiTitle = firstString(
     [...lines].reverse().find(line => line.type === 'ai-title')?.aiTitle
   )
+  const firstUserMessage = messages.find(message => message.role === 'user')
+  const commandTitle = firstUserMessage
+    ? extractClaudeCommandTitle(firstUserMessage.content)
+    : null
   const titleSeed =
     latestCustomTitle ??
     aiTitle ??
-    messages.find(message => message.role === 'user')?.content ??
+    commandTitle ??
+    firstUserMessage?.content ??
     messages[0].content
   const validTimestamps = lines
     .map(line => line.timestamp)

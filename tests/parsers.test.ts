@@ -1358,6 +1358,81 @@ describe('Claude Code sessions', () => {
     expect(parsed[0].session.updatedAt).toBe('2026-01-01T10:00:05.000Z')
   })
 
+  it('uses the Claude command name for command-wrapper session titles', () => {
+    const commandMessage =
+      '<command-message>insights</command-message> ' +
+      '<command-name>/insights</command-name> ' +
+      '<command-args></command-args>'
+    const raw = [
+      JSON.stringify({
+        type: 'user',
+        uuid: 'u1',
+        message: { role: 'user', content: commandMessage },
+        timestamp: '2026-01-01T10:00:00.000Z',
+        cwd: '/tmp/repo-claude',
+        sessionId: 'session-claude-command'
+      }),
+      JSON.stringify({
+        type: 'assistant',
+        uuid: 'a1',
+        message: {
+          role: 'assistant',
+          model: 'claude-sonnet-4-6',
+          content: [{ type: 'text', text: 'Here is the report.' }]
+        },
+        timestamp: '2026-01-01T10:00:05.000Z',
+        cwd: '/tmp/repo-claude',
+        sessionId: 'session-claude-command'
+      })
+    ].join('\n')
+
+    const parsed = parseSessionArtifacts(raw, {
+      filePath:
+        '/Users/me/.claude/projects/-tmp-repo-claude/session-claude-command.jsonl',
+      repoRoot: '/tmp/repo-claude',
+      source: 'claude'
+    })
+
+    expect(parsed[0].session.title).toBe('/insights')
+    expect(parsed[0].messages[0].content).toBe(commandMessage)
+  })
+
+  it('falls back to the command message when the Claude command name is absent', () => {
+    const raw = [
+      JSON.stringify({
+        type: 'user',
+        uuid: 'u1',
+        message: {
+          role: 'user',
+          content: '<command-message>insights</command-message>'
+        },
+        timestamp: '2026-01-01T10:00:00.000Z',
+        cwd: '/tmp/repo-claude',
+        sessionId: 'session-claude-command-fallback'
+      }),
+      JSON.stringify({
+        type: 'assistant',
+        uuid: 'a1',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Here is the report.' }]
+        },
+        timestamp: '2026-01-01T10:00:05.000Z',
+        cwd: '/tmp/repo-claude',
+        sessionId: 'session-claude-command-fallback'
+      })
+    ].join('\n')
+
+    const parsed = parseSessionArtifacts(raw, {
+      filePath:
+        '/Users/me/.claude/projects/-tmp-repo-claude/session-claude-command-fallback.jsonl',
+      repoRoot: '/tmp/repo-claude',
+      source: 'claude'
+    })
+
+    expect(parsed[0].session.title).toBe('/insights')
+  })
+
   it('maps Claude plan mode to plan; acceptEdits and default get no mode (Claude Code has no autopilot)', () => {
     const raw = [
       JSON.stringify({
