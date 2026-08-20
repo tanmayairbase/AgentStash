@@ -121,7 +121,7 @@ export const formatSessionOrigin = (origin: SessionSource): string => {
   if (origin === 'claude') {
     return 'Claude Code'
   }
-  return 'CLI'
+  return 'Copilot CLI'
 }
 
 export const formatAgentName = (source: SessionSource): string => {

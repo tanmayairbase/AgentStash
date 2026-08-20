@@ -50,7 +50,7 @@ describe('matchesIstDatePreset', () => {
 
 describe('formatSessionOrigin', () => {
   it('formats source values into user-friendly labels', () => {
-    expect(formatSessionOrigin('cli')).toBe('CLI')
+    expect(formatSessionOrigin('cli')).toBe('Copilot CLI')
     expect(formatSessionOrigin('vscode')).toBe('VS Code')
     expect(formatSessionOrigin('opencode')).toBe('OpenCode')
   })
