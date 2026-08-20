@@ -23,6 +23,7 @@ import {
   normalizeModelLabel
 } from '@shared/format'
 import { TokenUsageBarWithTooltip } from './TokenUsageBarWithTooltip'
+import { InlineCodeText } from './InlineCodeText'
 import { MermaidDiagram } from './MermaidDiagram'
 import { SessionBranchMenu } from './SessionBranchMenu'
 
@@ -572,7 +573,9 @@ export const SessionDetailView = ({
     <section className="detail">
       <header className="detail-header">
         <div className="detail-title-wrap">
-          <h2 title={detail.title}>{detail.title}</h2>
+          <h2 title={detail.title}>
+            <InlineCodeText text={detail.title} />
+          </h2>
           <div className="detail-meta">
             <span>Origin: {formatSessionOrigin(detail.source)}</span>
             {detail.agent ? <span>Agent: {detail.agent}</span> : null}

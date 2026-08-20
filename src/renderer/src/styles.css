@@ -1322,7 +1322,8 @@ button:hover {
   line-height: 1.5;
 }
 
-.message-content code {
+.message-content code,
+.inline-code {
   background: var(--surface-code-inline);
   border: 1px solid var(--border-code);
   border-radius: 6px;

@@ -134,6 +134,18 @@ describe('SessionDetailView grouping', () => {
     expect(onCopySessionId).toHaveBeenCalledWith('s1')
   })
 
+  it('renders inline code in the session title', () => {
+    render(
+      <SessionDetailView
+        detail={{ ...detail, title: 'Work on `10m-mixed-eslint-severities`' }}
+      />
+    )
+
+    expect(document.querySelector('.detail-header h2 code')).toHaveTextContent(
+      '10m-mixed-eslint-severities'
+    )
+  })
+
   it('switches between related Claude branches from the detail header', () => {
     const onSelectBranch = vi.fn()
     const olderBranchPrompt =

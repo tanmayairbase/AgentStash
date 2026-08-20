@@ -14,6 +14,7 @@ import {
 } from '@shared/format'
 import type { SessionCostCategory } from '../../../shared/pricing'
 import { BranchIcon } from './BranchIcon'
+import { InlineCodeText } from './InlineCodeText'
 import { SessionCostChip } from './SessionCostChip'
 
 type DateFilterValue = DateFilterPreset | ''
@@ -506,7 +507,10 @@ export const SessionListSidebar = ({
         type="button"
       >
         <div className="session-title">
-          {toSearchPreview(session.title, 72)}
+          <InlineCodeText
+            text={toSearchPreview(session.title, 72)}
+            allowUnclosedCode
+          />
         </div>
         <div className="session-meta">
           {(session.userArchived || session.missingFromLastSync) && (

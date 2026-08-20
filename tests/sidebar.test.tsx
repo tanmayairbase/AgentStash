@@ -180,6 +180,46 @@ describe('SessionListSidebar', () => {
     expect(onOpenStats).toHaveBeenCalledTimes(1)
   })
 
+  it('renders inline code in session titles', () => {
+    renderSidebar({
+      sessions: [
+        {
+          ...sessions[0],
+          title: 'Work on `10m-mixed-eslint-severities`'
+        }
+      ]
+    })
+
+    expect(document.querySelector('.session-title code')).toHaveTextContent(
+      '10m-mixed-eslint-severities'
+    )
+  })
+
+  it('keeps truncated inline code styled in session titles', () => {
+    renderSidebar({
+      sessions: [
+        {
+          ...sessions[0],
+          title:
+            'Work on `10m-mixed-eslint-severities-with-a-very-long-name-that-continues`'
+        }
+      ]
+    })
+
+    expect(document.querySelector('.session-title code')).toHaveTextContent(
+      '10m-mixed-eslint-severities'
+    )
+  })
+
+  it('leaves unmatched backticks literal in session titles', () => {
+    renderSidebar({
+      sessions: [{ ...sessions[0], title: 'Work on `unfinished title' }]
+    })
+
+    expect(document.querySelector('.session-title code')).toBeNull()
+    expect(screen.getByText('Work on `unfinished title')).toBeTruthy()
+  })
+
   it('shows clear-search button only when query exists and clears search', () => {
     const { onQueryChange } = renderSidebar({ query: 'auth' })
     fireEvent.click(screen.getByLabelText('Clear search'))
