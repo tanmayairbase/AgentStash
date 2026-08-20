@@ -289,8 +289,7 @@ const CLAUDE_CODE_RATES: Record<string, ModelRate> = {
     cacheWrite1h: 10,
     output: 25
   },
-  // Sonnet 5 introductory pricing is in effect through 2026-08-31; standard
-  // rates ($3 / $0.30 / $3.75 / $6 / $15) take over on 2026-09-01.
+  // Sonnet 5 launch pricing is now its standard price.
   'claude-sonnet-5': {
     provider: 'anthropic',
     input: 2,
