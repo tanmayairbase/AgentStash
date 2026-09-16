@@ -247,6 +247,7 @@ interface Props {
   detail: SessionDetail | null
   theme?: TranscriptTheme
   onCopySessionId?: (sessionId: string) => Promise<void> | void
+  onCopyMessageContent?: (content: string) => Promise<void> | void
   onToggleMessageStar?: (
     sessionId: string,
     messageId: string,
@@ -370,6 +371,7 @@ export const SessionDetailView = ({
   detail,
   theme = 'dark',
   onCopySessionId,
+  onCopyMessageContent,
   onToggleMessageStar,
   onSelectBranch,
   focusMessageId,
@@ -664,31 +666,61 @@ export const SessionDetailView = ({
                     </span>
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  className={`message-star ${message.hasStarredMessage ? 'active' : ''}`}
-                  aria-label={
-                    message.hasStarredMessage
-                      ? 'Unstar message'
-                      : 'Star message'
-                  }
-                  title={
-                    message.hasStarredMessage
-                      ? 'Unstar message'
-                      : 'Star message'
-                  }
-                  onClick={() => {
-                    void onToggleMessageStar?.(
-                      detail.id,
-                      message.primaryMessageId,
-                      !message.hasStarredMessage
-                    )
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                  </svg>
-                </button>
+                <div className="message-header-actions">
+                  <span className="message-icon-tooltip-anchor">
+                    <button
+                      type="button"
+                      className="message-copy"
+                      aria-label="Copy message"
+                      onClick={() => {
+                        void onCopyMessageContent?.(message.combinedContent)
+                      }}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        <path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z" />
+                      </svg>
+                    </button>
+                    <span
+                      className="message-icon-tooltip"
+                      role="presentation"
+                    >
+                      Copy message
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className={`message-star ${message.hasStarredMessage ? 'active' : ''}`}
+                    aria-label={
+                      message.hasStarredMessage
+                        ? 'Unstar message'
+                        : 'Star message'
+                    }
+                    title={
+                      message.hasStarredMessage
+                        ? 'Unstar message'
+                        : 'Star message'
+                    }
+                    onClick={() => {
+                      void onToggleMessageStar?.(
+                        detail.id,
+                        message.primaryMessageId,
+                        !message.hasStarredMessage
+                      )
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               {message.references.length > 0 && (
                 <div className="message-artifacts">
