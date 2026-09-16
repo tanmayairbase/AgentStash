@@ -1082,31 +1082,47 @@ export const App = () => {
     }
   }
 
+  const writeToClipboard = useCallback(async (text: string): Promise<void> => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return
+    }
+    const input = document.createElement('textarea')
+    input.value = text
+    input.setAttribute('readonly', 'true')
+    input.style.position = 'fixed'
+    input.style.left = '-10000px'
+    document.body.appendChild(input)
+    input.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(input)
+    if (!copied) {
+      throw new Error('Clipboard API unavailable')
+    }
+  }, [])
+
   const onCopySessionId = useCallback(
     async (sessionId: string): Promise<void> => {
       try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(sessionId)
-        } else {
-          const input = document.createElement('textarea')
-          input.value = sessionId
-          input.setAttribute('readonly', 'true')
-          input.style.position = 'fixed'
-          input.style.left = '-10000px'
-          document.body.appendChild(input)
-          input.select()
-          const copied = document.execCommand('copy')
-          document.body.removeChild(input)
-          if (!copied) {
-            throw new Error('Clipboard API unavailable')
-          }
-        }
+        await writeToClipboard(sessionId)
         setToast('Session ID copied.')
       } catch (error) {
         setToast(`Copy failed: ${(error as Error).message}`)
       }
     },
-    []
+    [writeToClipboard]
+  )
+
+  const onCopyMessageContent = useCallback(
+    async (content: string): Promise<void> => {
+      try {
+        await writeToClipboard(content)
+        setToast('Copied to clipboard.')
+      } catch (error) {
+        setToast(`Copy failed: ${(error as Error).message}`)
+      }
+    },
+    [writeToClipboard]
   )
 
   const startResize = (event: ReactMouseEvent<HTMLDivElement>): void => {
@@ -1260,6 +1276,7 @@ export const App = () => {
           detail={selectedDetail}
           theme={resolvedTheme}
           onCopySessionId={onCopySessionId}
+          onCopyMessageContent={onCopyMessageContent}
           onToggleMessageStar={(sessionId, messageId, starred) =>
             void onToggleMessageStar(sessionId, messageId, starred)
           }

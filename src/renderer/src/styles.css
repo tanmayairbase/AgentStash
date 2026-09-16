@@ -1244,7 +1244,14 @@ button:hover {
   gap: 8px;
 }
 
-.message-star {
+.message-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.message-star,
+.message-copy {
   border: 0;
   background: transparent;
   color: var(--text-dim);
@@ -1258,20 +1265,64 @@ button:hover {
   transition: opacity 120ms ease-in-out;
 }
 
-.message-star svg {
+.message-star svg,
+.message-copy svg {
   width: 15px;
   height: 15px;
   fill: currentColor;
 }
 
 .message:hover .message-star,
-.message:focus-within .message-star {
+.message:focus-within .message-star,
+.message:hover .message-copy,
+.message:focus-within .message-copy {
   opacity: 1;
 }
 
 .message-star.active {
   color: var(--accent-warning);
   opacity: 1;
+}
+
+.message-icon-tooltip-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.message-icon-tooltip {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 31;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 6px 8px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-floating);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.message-icon-tooltip-anchor:hover .message-icon-tooltip,
+.message-icon-tooltip-anchor:focus-within .message-icon-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-icon-tooltip {
+    transition: none;
+  }
 }
 
 .message-artifacts {

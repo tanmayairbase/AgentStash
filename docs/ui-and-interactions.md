@@ -78,6 +78,7 @@ Current behavior:
 - the newest Claude branch by default, with search navigation opening the matching branch
 - selected-branch usage plus a deduplicated conversation total in the usage tooltip
 - message starring
+- copying a message's raw markdown content to the clipboard
 - grouped same-role messages within the same IST minute
 - chunked transcript rendering with `Load older messages`
 
