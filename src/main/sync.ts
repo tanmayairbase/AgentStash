@@ -359,6 +359,10 @@ export const syncSessions = async (
           onlyFiles: true,
           suppressErrors: true,
           unique: true,
+          // pnpm-style node_modules symlink farms can make traversal blow up
+          // (minutes instead of seconds) if the crawler follows them. Skips
+          // symlinked artifact files/dirs too, which is an acceptable trade-off.
+          followSymbolicLinks: false,
           ignore: artifactDiscoveryIgnore
         })
         logInfo('Scanned repo root', { root, filesFound: rootEntries.length })
