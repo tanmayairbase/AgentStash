@@ -139,6 +139,13 @@ const RATES: Record<string, ModelRate> = {
     cacheWrite: 6.25,
     output: 25
   },
+  'claude-opus-5.5': {
+    provider: 'anthropic',
+    input: 4,
+    cachedInput: 0.2,
+    cacheWrite: 5,
+    output: 20
+  },
   // Promotional pricing through 2026-08-31; the page lists no other rate.
   'claude-sonnet-5': {
     provider: 'anthropic',
@@ -151,6 +158,13 @@ const RATES: Record<string, ModelRate> = {
     provider: 'anthropic',
     input: 10,
     cachedInput: 1,
+    cacheWrite: 12.5,
+    output: 50
+  },
+  'claude-fable-5.1': {
+    provider: 'anthropic',
+    input: 10,
+    cachedInput: 0.25,
     cacheWrite: 12.5,
     output: 50
   },
@@ -249,6 +263,14 @@ const CLAUDE_CODE_RATES: Record<string, ModelRate> = {
     cacheWrite1h: 20,
     output: 50
   },
+  'claude-fable-5-1': {
+    provider: 'anthropic',
+    input: 10,
+    cachedInput: 0.25,
+    cacheWrite: 12.5,
+    cacheWrite1h: 20,
+    output: 50
+  },
   'claude-opus-5': {
     provider: 'anthropic',
     input: 5,
@@ -256,6 +278,14 @@ const CLAUDE_CODE_RATES: Record<string, ModelRate> = {
     cacheWrite: 6.25,
     cacheWrite1h: 10,
     output: 25
+  },
+  'claude-opus-5-5': {
+    provider: 'anthropic',
+    input: 4,
+    cachedInput: 0.2,
+    cacheWrite: 5,
+    cacheWrite1h: 8,
+    output: 20
   },
   'claude-opus-4-8': {
     provider: 'anthropic',
