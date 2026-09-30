@@ -154,6 +154,72 @@ describe('priceForClaudeCodeModel', () => {
   it('returns null for an unknown Claude model id', () => {
     expect(priceForClaudeCodeModel('claude-made-up-model')).toBeNull()
   })
+
+  it('returns the published Claude Sonnet 5.5 rate', () => {
+    expect(priceForClaudeCodeModel('claude-sonnet-5-5')).toEqual({
+      provider: 'anthropic',
+      input: 2,
+      cachedInput: 0.2,
+      cacheWrite: 2.5,
+      cacheWrite1h: 4,
+      output: 10
+    })
+  })
+
+  it('falls back to the newest older version in the family and marks it estimated', () => {
+    expect(priceForClaudeCodeModel('claude-sonnet-5-6')).toEqual({
+      ...priceForClaudeCodeModel('claude-sonnet-5-5'),
+      estimated: true
+    })
+    expect(priceForClaudeCodeModel('claude-opus-5-6-20270101')).toEqual({
+      ...priceForClaudeCodeModel('claude-opus-5-5'),
+      estimated: true
+    })
+  })
+
+  it('does not fall back across families, majors, or to a newer version', () => {
+    expect(priceForClaudeCodeModel('claude-newfamily-5-1')).toBeNull()
+    expect(priceForClaudeCodeModel('claude-haiku-3-5')).toBeNull()
+    expect(priceForClaudeCodeModel('claude-opus-6')).toBeNull()
+  })
+
+  it('does not mark an exact version estimated when only the separator differs', () => {
+    expect(priceForClaudeCodeModel('claude-sonnet-5.5')).toEqual(
+      priceForClaudeCodeModel('claude-sonnet-5-5')
+    )
+    expect(priceForClaudeCodeModel('claude-sonnet-5.5')).not.toHaveProperty(
+      'estimated'
+    )
+  })
+})
+
+describe('priceFor family fallback', () => {
+  it('prices an unknown newer Claude version from its family and marks it estimated', () => {
+    expect(priceFor('claude-sonnet-5.6')).toEqual({
+      ...priceFor('claude-sonnet-5.5'),
+      estimated: true
+    })
+  })
+
+  it('normalizes case and -preview before falling back', () => {
+    expect(priceFor('Claude-Sonnet-5.6-preview')).toEqual(
+      priceFor('claude-sonnet-5.6')
+    )
+    expect(priceFor('claude-sonnet-5.6')).toHaveProperty('estimated', true)
+  })
+
+  it('does not treat a date suffix as a minor version', () => {
+    expect(priceFor('claude-opus-4-20250514')).toBeNull()
+  })
+
+  it('does not mark an exact version estimated when only the separator differs', () => {
+    expect(priceFor('claude-sonnet-5-5')).toEqual(priceFor('claude-sonnet-5.5'))
+    expect(priceFor('claude-sonnet-5-5')).not.toHaveProperty('estimated')
+  })
+
+  it('returns null for a version older than every known one in its family', () => {
+    expect(priceFor('claude-haiku-3.5')).toBeNull()
+  })
 })
 
 describe('providerOf', () => {

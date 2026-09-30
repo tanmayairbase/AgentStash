@@ -15,6 +15,8 @@ export interface ModelRate {
   cacheWrite: number
   cacheWrite1h?: number
   output: number
+  // Set when the rate was borrowed from another version of the same model family.
+  estimated?: true
 }
 
 const RATES: Record<string, ModelRate> = {
@@ -154,6 +156,13 @@ const RATES: Record<string, ModelRate> = {
     cacheWrite: 2.5,
     output: 10
   },
+  'claude-sonnet-5.5': {
+    provider: 'anthropic',
+    input: 2,
+    cachedInput: 0.2,
+    cacheWrite: 2.5,
+    output: 10
+  },
   'claude-fable-5': {
     provider: 'anthropic',
     input: 10,
@@ -238,8 +247,51 @@ export const providerOf = (modelId: string): Provider | null => {
   return null
 }
 
+const CLAUDE_VERSIONED_ID = /^(claude-[a-z]+)-(\d+)(?:[-.](\d{1,2}))?$/
+
+const claudeVersion = (
+  modelId: string
+): { family: string; version: [number, number] } | null => {
+  const match = CLAUDE_VERSIONED_ID.exec(modelId)
+  if (!match) return null
+  return {
+    family: match[1],
+    version: [Number(match[2]), Number(match[3] ?? 0)]
+  }
+}
+
+// A model released after the tables were last updated (e.g. claude-sonnet-5-6)
+// is priced at the newest known version of its family within the same major
+// version that is not newer than it. Minor releases usually keep pricing, so
+// this beats showing no cost; major releases often reprice, so they get none.
+// The result is marked estimated unless it is the same version spelled with a
+// different separator (5-5 vs 5.5).
+const familyFallback = (
+  table: Record<string, ModelRate>,
+  modelId: string
+): ModelRate | null => {
+  const wanted = claudeVersion(modelId)
+  if (!wanted) return null
+  let best: { version: [number, number]; rate: ModelRate } | null = null
+  for (const [id, rate] of Object.entries(table)) {
+    const known = claudeVersion(id)
+    if (!known || known.family !== wanted.family) continue
+    const [major, minor] = known.version
+    const [wantedMajor, wantedMinor] = wanted.version
+    if (major !== wantedMajor || minor > wantedMinor) continue
+    if (!best || minor > best.version[1]) {
+      best = { version: known.version, rate }
+    }
+  }
+  if (!best) return null
+  return best.version[1] === wanted.version[1]
+    ? best.rate
+    : { ...best.rate, estimated: true }
+}
+
 export const priceFor = (modelId: string): ModelRate | null => {
-  return RATES[normalizeModelId(modelId)] ?? null
+  const id = normalizeModelId(modelId)
+  return RATES[id] ?? familyFallback(RATES, id)
 }
 
 // Claude Code's own billing (subscription, API key, or enterprise contract) is
@@ -328,6 +380,14 @@ const CLAUDE_CODE_RATES: Record<string, ModelRate> = {
     cacheWrite1h: 4,
     output: 10
   },
+  'claude-sonnet-5-5': {
+    provider: 'anthropic',
+    input: 2,
+    cachedInput: 0.2,
+    cacheWrite: 2.5,
+    cacheWrite1h: 4,
+    output: 10
+  },
   'claude-sonnet-4-6': {
     provider: 'anthropic',
     input: 3,
@@ -350,7 +410,8 @@ const normalizeClaudeCodeModelId = (modelId: string): string =>
   modelId.toLowerCase().replace(/-\d{8}$/, '')
 
 export const priceForClaudeCodeModel = (modelId: string): ModelRate | null => {
-  return CLAUDE_CODE_RATES[normalizeClaudeCodeModelId(modelId)] ?? null
+  const id = normalizeClaudeCodeModelId(modelId)
+  return CLAUDE_CODE_RATES[id] ?? familyFallback(CLAUDE_CODE_RATES, id)
 }
 
 export interface ModelTokenCounts {
