@@ -396,6 +396,17 @@ const CLAUDE_CODE_RATES: Record<string, ModelRate> = {
     cacheWrite1h: 6,
     output: 15
   },
+  // Base rate for prompts up to 100,000 tokens. Prompts over 100,000 tokens cost
+  // more ($0.50 in, $0.625 5m write, $1 1h write, $0.05 hit, $2.50 out), but
+  // usage is aggregated per model, so the tier can't be applied per request.
+  'claude-haiku-5-5': {
+    provider: 'anthropic',
+    input: 0.1,
+    cachedInput: 0.01,
+    cacheWrite: 0.125,
+    cacheWrite1h: 0.2,
+    output: 0.5
+  },
   'claude-haiku-4-5': {
     provider: 'anthropic',
     input: 1,

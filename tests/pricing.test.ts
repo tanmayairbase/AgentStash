@@ -166,6 +166,17 @@ describe('priceForClaudeCodeModel', () => {
     })
   })
 
+  it('returns the published Claude Haiku 5.5 base rate (prompts up to 100k tokens)', () => {
+    expect(priceForClaudeCodeModel('claude-haiku-5-5')).toEqual({
+      provider: 'anthropic',
+      input: 0.1,
+      cachedInput: 0.01,
+      cacheWrite: 0.125,
+      cacheWrite1h: 0.2,
+      output: 0.5
+    })
+  })
+
   it('falls back to the newest older version in the family and marks it estimated', () => {
     expect(priceForClaudeCodeModel('claude-sonnet-5-6')).toEqual({
       ...priceForClaudeCodeModel('claude-sonnet-5-5'),
