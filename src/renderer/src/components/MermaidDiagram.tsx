@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { TranscriptTheme } from './SessionDetailView'
+import { copySvgAsPng, downloadSvgAsPng } from './mermaidImage'
 
 type MermaidApi = (typeof import('mermaid'))['default']
 
@@ -22,7 +23,10 @@ const loadMermaid = (): Promise<MermaidApi> => {
 let mermaidRenderChain: Promise<unknown> = Promise.resolve()
 let initializedTheme: TranscriptTheme | null = null
 
-const renderMermaid = (theme: TranscriptTheme, source: string): Promise<string> => {
+const renderMermaid = (
+  theme: TranscriptTheme,
+  source: string
+): Promise<string> => {
   const run = mermaidRenderChain.then(async () => {
     const mermaid = await loadMermaid()
     if (initializedTheme !== theme) {
@@ -52,9 +56,7 @@ const renderMermaid = (theme: TranscriptTheme, source: string): Promise<string> 
 }
 
 type DiagramState =
-  | { status: 'pending' }
-  | { status: 'ready'; svg: string }
-  | { status: 'error' }
+  { status: 'pending' } | { status: 'ready'; svg: string } | { status: 'error' }
 
 // Fullscreen lightbox for a rendered diagram. Rendered through a portal so the
 // overlay escapes the scrollable message column and covers the whole window.
@@ -67,6 +69,47 @@ const MermaidLightbox = ({
   theme: TranscriptTheme
   onClose: () => void
 }) => {
+  const overlayRef = useRef<HTMLDivElement>(null)
+  type ExportTarget = 'copy' | 'download'
+  const [feedback, setFeedback] = useState<{
+    target: ExportTarget
+    ok: boolean
+  } | null>(null)
+  const resetTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(resetTimer.current), [])
+
+  const runExport = (
+    event: React.MouseEvent,
+    target: ExportTarget,
+    action: (svg: string, background: string) => Promise<void>
+  ): void => {
+    event.stopPropagation()
+    const background = overlayRef.current
+      ? getComputedStyle(overlayRef.current).backgroundColor
+      : '#ffffff'
+    const showResult = (ok: boolean): void => {
+      setFeedback({ target, ok })
+      window.clearTimeout(resetTimer.current)
+      resetTimer.current = window.setTimeout(() => setFeedback(null), 2000)
+    }
+    action(svg, background).then(
+      () => showResult(true),
+      error => {
+        console.error(`Failed to ${target} mermaid diagram as image`, error)
+        showResult(false)
+      }
+    )
+  }
+
+  const label = (
+    target: ExportTarget,
+    idle: string,
+    done: string,
+    failed: string
+  ): string =>
+    feedback?.target !== target ? idle : feedback.ok ? done : failed
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
@@ -81,21 +124,47 @@ const MermaidLightbox = ({
 
   return createPortal(
     <div
+      ref={overlayRef}
       className="mermaid-lightbox-overlay"
       role="dialog"
       aria-modal="true"
       aria-label="Expanded diagram"
       onClick={onClose}
     >
-      <button
-        type="button"
-        className="mermaid-lightbox-close"
-        aria-label="Close expanded diagram"
-        onClick={onClose}
+      <div
+        className="mermaid-lightbox-toolbar"
+        onClick={event => event.stopPropagation()}
       >
-        <kbd>Esc</kbd>
-        <span>to close</span>
-      </button>
+        <button
+          type="button"
+          className="mermaid-lightbox-close"
+          aria-label="Download diagram as PNG"
+          onClick={event => runExport(event, 'download', downloadSvgAsPng)}
+        >
+          <span aria-live="polite">
+            {label('download', 'Download', 'Saved', 'Download failed')}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="mermaid-lightbox-close"
+          aria-label="Copy diagram as image"
+          onClick={event => runExport(event, 'copy', copySvgAsPng)}
+        >
+          <span aria-live="polite">
+            {label('copy', 'Copy image', 'Copied', 'Copy failed')}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="mermaid-lightbox-close"
+          aria-label="Close expanded diagram"
+          onClick={onClose}
+        >
+          <kbd>Esc</kbd>
+          <span>to close</span>
+        </button>
+      </div>
       <div
         className="mermaid-lightbox-content"
         data-mermaid-theme={theme}
